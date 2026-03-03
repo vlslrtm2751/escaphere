@@ -9,11 +9,12 @@ import { HintPathOverlay } from './HintPathOverlay';
 
 type Props = {
   state: GameState;
+  onRespawnComplete: () => void;
 };
 
 const PADDING = 8;
 
-export function GameBoard({ state }: Props) {
+export function GameBoard({ state, onRespawnComplete }: Props) {
   const { theme } = useTheme();
   const { width } = Dimensions.get('window');
   const boardSize = Math.min(width - PADDING * 2, 400);
@@ -55,7 +56,13 @@ export function GameBoard({ state }: Props) {
           revealedCount={state.hint.revealedCount}
           cellSize={cellSize}
         />
-        <PlayerOrb pos={state.playerPos} cellSize={cellSize} />
+        <PlayerOrb
+          pos={state.playerPos}
+          cellSize={cellSize}
+          gridSize={state.gridSize}
+          respawnDir={state.respawnDir}
+          onRespawnComplete={onRespawnComplete}
+        />
       </View>
     </View>
   );
@@ -67,7 +74,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     position: 'relative',
     borderRadius: 4,
-    overflow: 'hidden',
+    // overflow intentionally NOT hidden — lets the ball fly off the grid boundary
   },
   overlay: {
     position: 'absolute',

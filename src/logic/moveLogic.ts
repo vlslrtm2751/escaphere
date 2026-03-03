@@ -10,21 +10,6 @@ export function isInBounds(pos: Position, gridSize: number): boolean {
   return pos.row >= 0 && pos.row < gridSize && pos.col >= 0 && pos.col < gridSize;
 }
 
-export function canPassBetween(
-  grid: CellWalls[][],
-  from: Position,
-  direction: Direction
-): boolean {
-  const exitFace = DIRECTION_TO_FACE[direction];
-  const enterFace = OPPOSITE_FACE[exitFace];
-  const next = getNextPos(from, direction);
-
-  if (grid[from.row][from.col][exitFace]) return false;
-  if (grid[next.row][next.col][enterFace]) return false;
-
-  return true;
-}
-
 export function simulateMove(
   grid: CellWalls[][],
   start: Position,
@@ -34,15 +19,24 @@ export function simulateMove(
 ): { landPos: Position; pathCells: Position[]; result: 'stop' | 'exit' | 'out' } {
   let cur = start;
   const pathCells: Position[] = [];
+  const exitFace = DIRECTION_TO_FACE[direction];
+  const enterFace = OPPOSITE_FACE[exitFace];
 
   while (true) {
+    // 1. Check wall on the current cell first — prevents edge cells from falsely going 'out'
+    if (grid[cur.row][cur.col][exitFace]) {
+      return { landPos: cur, pathCells, result: 'stop' };
+    }
+
     const next = getNextPos(cur, direction);
 
+    // 2. Check bounds — only reached when no wall is blocking
     if (!isInBounds(next, gridSize)) {
       return { landPos: cur, pathCells, result: 'out' };
     }
 
-    if (!canPassBetween(grid, cur, direction)) {
+    // 3. Check wall on the entry face of the next cell
+    if (grid[next.row][next.col][enterFace]) {
       return { landPos: cur, pathCells, result: 'stop' };
     }
 

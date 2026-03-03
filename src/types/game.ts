@@ -47,7 +47,8 @@ export type GameState = {
   playerPos: Position;
   moveCount: number;
   undoRemaining: number;
-  status: 'playing' | 'cleared' | 'gameover';
+  status: 'playing' | 'cleared' | 'gameover' | 'respawning';
+  respawnDir: Direction | null;
   hint: HintState;
   undoStack: UndoSnapshot[];
 };

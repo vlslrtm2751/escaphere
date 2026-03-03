@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   SafeAreaView,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Difficulty, Direction } from '../types/game';
@@ -26,7 +25,7 @@ type Props = {
 
 export function GameScreen({ difficulty, onHome }: Props) {
   const { theme } = useTheme();
-  const { state, move, undo, hint, refresh, nextStage, restart } = useGameState(difficulty);
+  const { state, move, undo, hint, refresh, nextStage, restart, completeRespawn } = useGameState(difficulty);
   const { playSfx } = useSfx();
   const haptic = useHaptic();
   const [paused, setPaused] = useState(false);
@@ -74,6 +73,20 @@ export function GameScreen({ difficulty, onHome }: Props) {
     move(direction);
   }, [state.status, move]);
 
+  // PC keyboard arrow key support
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const keyMap: Record<string, Direction> = {
+      ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+    };
+    const handler = (e: KeyboardEvent) => {
+      const dir = keyMap[e.key];
+      if (dir) { e.preventDefault(); handleMove(dir); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleMove]);
+
   const handleHint = useCallback(() => {
     hint();
     playSfx('hint');
@@ -90,7 +103,7 @@ export function GameScreen({ difficulty, onHome }: Props) {
       <GameHeader state={state} onPause={() => setPaused(true)} />
 
       <View style={styles.boardContainer}>
-        <GameBoard state={state} />
+        <GameBoard state={state} onRespawnComplete={completeRespawn} />
       </View>
 
       <GameToolbar

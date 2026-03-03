@@ -4,6 +4,7 @@ import { generateMap } from '../logic/mapGenerator';
 import { simulateMove } from '../logic/moveLogic';
 import { revealNextHint } from '../logic/hintLogic';
 import { pushUndo, applyUndo } from '../logic/undoLogic';
+import { DIFFICULTY_CONFIG } from '../constants/gameConfig';
 
 export function useGameState(initialDifficulty: Difficulty = 'normal') {
   const [state, setState] = useState<GameState>(() =>
@@ -24,7 +25,14 @@ export function useGameState(initialDifficulty: Difficulty = 'normal') {
       );
 
       if (result === 'out') {
-        return { ...withUndo, playerPos: landPos, status: 'gameover', moveCount: prev.moveCount + 1 };
+        // Enter 'respawning' state — PlayerOrb plays fly-out animation,
+        // then calls completeRespawn() to reset to center.
+        return {
+          ...prev,
+          playerPos: landPos,   // stay at edge for the fly-out animation
+          status: 'respawning',
+          respawnDir: direction, // tells PlayerOrb which way to animate
+        };
       }
 
       if (result === 'exit') {
@@ -32,11 +40,28 @@ export function useGameState(initialDifficulty: Difficulty = 'normal') {
       }
 
       if (landPos.row === prev.playerPos.row && landPos.col === prev.playerPos.col) {
-        // no movement (wall blocking immediately) - don't count move
         return prev;
       }
 
       return { ...withUndo, playerPos: landPos, moveCount: prev.moveCount + 1 };
+    });
+  }, []);
+
+  /** Called by PlayerOrb after its fly-out animation finishes. */
+  const completeRespawn = useCallback(() => {
+    setState(prev => {
+      if (prev.status !== 'respawning') return prev;
+      const center = Math.floor(prev.gridSize / 2);
+      const { undoLimit } = DIFFICULTY_CONFIG[prev.difficulty];
+      return {
+        ...prev,
+        playerPos: { row: center, col: center },
+        moveCount: 0,
+        undoStack: [],
+        undoRemaining: undoLimit,
+        status: 'playing',
+        respawnDir: null,
+      };
     });
   }, []);
 
@@ -63,5 +88,5 @@ export function useGameState(initialDifficulty: Difficulty = 'normal') {
     setState(prev => generateMap(prev.difficulty, prev.stageSeed, prev.stageNumber));
   }, []);
 
-  return { state, move, undo, hint, refresh, nextStage, restart };
+  return { state, move, undo, hint, refresh, nextStage, restart, completeRespawn };
 }

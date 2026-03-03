@@ -12,9 +12,12 @@ import { BgmToggleButton } from '../components/ui/BgmToggleButton';
 import { ThemeToggleButton } from '../components/ui/ThemeToggleButton';
 import { Badge } from '../components/common/Badge';
 import { loadRecords, loadStreak } from '../storage/asyncStorage';
+import { APP_VERSION } from '../constants/version';
 
 type Props = {
-  onStart: (difficulty: Difficulty) => void;
+  selectedDifficulty: Difficulty;
+  onDifficultyChange: (d: Difficulty) => void;
+  onStart: () => void;
 };
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
@@ -25,9 +28,8 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'normal', 'hard'];
 
-export function HomeScreen({ onStart }: Props) {
+export function HomeScreen({ selectedDifficulty, onDifficultyChange, onStart }: Props) {
   const { theme } = useTheme();
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('normal');
   const [records, setRecords] = useState<ClearRecord[]>([]);
   const [streak, setStreak] = useState<StreakData>({ currentStreak: 0, bestStreak: 0 });
 
@@ -44,6 +46,7 @@ export function HomeScreen({ onStart }: Props) {
       <View style={styles.topBar}>
         <BgmToggleButton />
         <View style={{ flex: 1 }} />
+        <Text style={[styles.version, { color: theme.subText }]}>{APP_VERSION}</Text>
         <ThemeToggleButton />
       </View>
 
@@ -68,7 +71,7 @@ export function HomeScreen({ onStart }: Props) {
                   borderColor: theme.border,
                 },
               ]}
-              onPress={() => setSelectedDifficulty(diff)}
+              onPress={() => onDifficultyChange(diff)}
               activeOpacity={0.7}
             >
               <Text
@@ -107,7 +110,7 @@ export function HomeScreen({ onStart }: Props) {
       {/* Start Button */}
       <TouchableOpacity
         style={[styles.startBtn, { backgroundColor: theme.player }]}
-        onPress={() => onStart(selectedDifficulty)}
+        onPress={() => onStart()}
         activeOpacity={0.8}
       >
         <Text style={[styles.startText, { color: theme.bg }]}>시작하기</Text>
@@ -136,6 +139,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    gap: 8,
+  },
+  version: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
   titleContainer: {
     alignItems: 'center',
