@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": [],
+    "rootDir": "../src",
+    "outDir": "../.mapgen-build"
+  },
+  "include": [
+    "../src/logic/**/*.ts",
+    "../src/constants/gameConfig.ts",
+    "../src/types/game.ts"
+  ]
+}
