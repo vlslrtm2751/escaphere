@@ -76,17 +76,20 @@ export function useGameState(initialDifficulty: Difficulty = 'normal') {
     }));
   }, []);
 
+  // generateMap is built outside the updater on purpose: React may call an
+  // updater more than once, which would generate the map twice and — for an
+  // unseeded call — hand back a different board each time.
   const refresh = useCallback((difficulty?: Difficulty) => {
-    setState(prev => generateMap(difficulty ?? prev.difficulty));
-  }, []);
+    setState(generateMap(difficulty ?? state.difficulty));
+  }, [state.difficulty]);
 
   const nextStage = useCallback(() => {
-    setState(prev => generateMap(prev.difficulty, undefined, prev.stageNumber + 1));
-  }, []);
+    setState(generateMap(state.difficulty, undefined, state.stageNumber + 1));
+  }, [state.difficulty, state.stageNumber]);
 
   const restart = useCallback(() => {
-    setState(prev => generateMap(prev.difficulty, prev.stageSeed, prev.stageNumber));
-  }, []);
+    setState(generateMap(state.difficulty, state.stageSeed, state.stageNumber));
+  }, [state.difficulty, state.stageSeed, state.stageNumber]);
 
   return { state, move, undo, hint, refresh, nextStage, restart, completeRespawn };
 }

@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "check:mapgen": "tsc -p scripts/tsconfig.mapgen.json && node scripts/check-mapgen.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.0.1",

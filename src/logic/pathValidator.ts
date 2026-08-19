@@ -1,7 +1,14 @@
 import { CellWalls, Direction, Position } from '../types/game';
 import { simulateMove } from './moveLogic';
 
-export function findUniqueSolution(
+/**
+ * BFS to find the shortest solution path (fewest moves) from start to exit.
+ * Returns the path if one exists, or null if the puzzle is unsolvable.
+ *
+ * Multiple solution paths are allowed — what matters is that the shortest
+ * one satisfies the minimum length requirement checked by the caller.
+ */
+export function findShortestSolution(
   grid: CellWalls[][],
   start: Position,
   exit: Position,
@@ -10,7 +17,6 @@ export function findUniqueSolution(
   type State = { pos: Position; path: Direction[] };
   const queue: State[] = [{ pos: start, path: [] }];
   const visited = new Set<string>();
-  const solutions: Direction[][] = [];
 
   while (queue.length > 0) {
     const { pos, path } = queue.shift()!;
@@ -22,13 +28,12 @@ export function findUniqueSolution(
       const { landPos, result } = simulateMove(grid, pos, dir, gridSize, exit);
 
       if (result === 'exit') {
-        solutions.push([...path, dir]);
-        if (solutions.length > 1) return null;
+        return [...path, dir]; // BFS guarantees this is the shortest solution
       } else if (result === 'stop') {
         queue.push({ pos: landPos, path: [...path, dir] });
       }
     }
   }
 
-  return solutions.length === 1 ? solutions[0] : null;
+  return null; // no solution exists
 }
