@@ -24,9 +24,10 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: '쉬움',
   normal: '보통',
   hard: '어려움',
+  hardcore: '하드코어',
 };
 
-const DIFFICULTIES: Difficulty[] = ['easy', 'normal', 'hard'];
+const DIFFICULTIES: Difficulty[] = ['easy', 'normal', 'hard', 'hardcore'];
 
 export function HomeScreen({ selectedDifficulty, onDifficultyChange, onStart }: Props) {
   const { theme } = useTheme();
