@@ -531,7 +531,7 @@ export function generateMap(
   seed?: string,
   stageNumber: number = 1
 ): GameState {
-  const { gridSize, minWalls, maxWalls, undoLimit, minSolutionLength, minStartOptions } =
+  const { gridSize, minWalls, maxWalls, undoLimit, minSolutionLength, maxSolutionLength, minStartOptions } =
     DIFFICULTY_CONFIG[difficulty];
   const center = Math.floor(gridSize / 2);
   const playerPos: Position = { row: center, col: center };
@@ -588,12 +588,23 @@ export function generateMap(
     return board;
   };
 
-  let result: AttemptResult = null;
-  let targetLength = minSolutionLength;
+  // Each board draws its own target length, so boards of one difficulty are not
+  // all the same size.
+  let targetLength = randomBetween(
+    minSolutionLength, maxSolutionLength, seededRandom(`${stageSeed}-len`)
+  );
 
   // Branching narrows acceptance considerably, so this pass gets more tries
   // than path construction alone needed.
-  for (let i = 0; i < 120 && !result; i++) result = attempt('bp', i, minSolutionLength);
+  let result: AttemptResult = null;
+  for (let i = 0; i < 120 && !result; i++) result = attempt('bp', i, targetLength);
+
+  // The drawn target may be more than this seed can fit; fall back to the
+  // difficulty's floor before giving up on a proper board.
+  if (!result && targetLength > minSolutionLength) {
+    targetLength = minSolutionLength;
+    for (let i = 0; i < 120 && !result; i++) result = attempt('floor', i, targetLength);
+  }
 
   // Relaxed pass — shorter but still a real puzzle.
   if (!result) {

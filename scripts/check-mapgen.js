@@ -21,6 +21,7 @@ const DIFFICULTIES = ['easy', 'normal', 'hard', 'hardcore'];
 // requirement lives in DIFFICULTY_CONFIG, which the generator reads too.
 const MIN_BRANCH_CELLS = 3;   // a wrong turn must stay alive this long
 const MIN_OFFPATH_CELLS = 3;  // stop cells off the solution: territory to rule out
+const MIN_IN_RANGE = 0.9;     // share of boards landing inside the difficulty's length range
 
 // NOT gated: options per solution step. A stop cell always carries a WallPair,
 // which blocks the direction of travel plus one perpendicular, so the only
@@ -140,7 +141,8 @@ for (const difficulty of DIFFICULTIES) {
   const maxMs = sorted[SAMPLES - 1];
 
   let tooShort = 0, worstLen = Infinity, badExit = 0, badWalls = 0, badReplay = 0;
-  let sumLen = 0;
+  let sumLen = 0, longestLen = 0, inRange = 0;
+  const lengthsSeen = new Set();
   // branching: does the board actually make the player choose?
   let noDecision = 0, thinStart = 0, worstStart = Infinity, shallowBranch = 0;
   let sumPathOptions = 0, pathSteps = 0;
@@ -157,7 +159,12 @@ for (const difficulty of DIFFICULTIES) {
     } else {
       sumLen += shortest.length;
       if (shortest.length < worstLen) worstLen = shortest.length;
+      if (shortest.length > longestLen) longestLen = shortest.length;
       if (shortest.length < cfg.minSolutionLength) tooShort++;
+      if (shortest.length >= cfg.minSolutionLength && shortest.length <= cfg.maxSolutionLength) {
+        inRange++;
+        lengthsSeen.add(shortest.length);
+      }
     }
 
     // 2. the stored solution path must actually reach the exit
@@ -219,11 +226,20 @@ for (const difficulty of DIFFICULTIES) {
     }
   }
 
-  console.log('  shortest-solution length: min ' + worstLen + ', avg ' + (sumLen / SAMPLES).toFixed(2));
+  const rangeShare = inRange / SAMPLES;
+  console.log('  shortest-solution length: ' + worstLen + ' ~ ' + longestLen +
+    ', avg ' + (sumLen / SAMPLES).toFixed(2) +
+    '  (' + (rangeShare * 100).toFixed(1) + '% within the configured ' +
+    cfg.minSolutionLength + '-' + cfg.maxSolutionLength + ')');
   console.log('  timing: avg ' + avgMs.toFixed(2) + ' ms/map, median ' + medianMs.toFixed(2) +
     ' ms  (p99 ' + p99Ms.toFixed(1) + ' ms, max ' + maxMs.toFixed(1) + ' ms - both GC-sensitive)');
 
   if (tooShort > 0) fail(tooShort + '/' + SAMPLES + ' maps have a shortest solution below minSolutionLength ' + cfg.minSolutionLength + ' (shortest seen: ' + worstLen + ')');
+  if (rangeShare < MIN_IN_RANGE) fail('only ' + (rangeShare * 100).toFixed(1) + '% of maps land inside the configured length range ' + cfg.minSolutionLength + '-' + cfg.maxSolutionLength);
+  {
+    const wanted = cfg.maxSolutionLength - cfg.minSolutionLength + 1;
+    if (lengthsSeen.size < wanted) fail('only ' + lengthsSeen.size + ' of the ' + wanted + ' lengths in ' + cfg.minSolutionLength + '-' + cfg.maxSolutionLength + ' ever occur - boards of one difficulty are all the same size');
+  }
   if (badReplay > 0) fail(badReplay + '/' + SAMPLES + ' maps store a solutionPath that does not reach the exit');
   if (badExit > 0) fail(badExit + '/' + SAMPLES + ' maps place the exit in the spawn zone or on a corner');
   if (badWalls > 0) fail(badWalls + '/' + SAMPLES + ' maps contain a cell whose wall face count is not 0 or 2');
