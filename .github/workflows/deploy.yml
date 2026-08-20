@@ -1,0 +1,104 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push the release tag
+  pages: write
+  id-token: write
+
+# One deploy at a time: the version number is derived from existing tags, so
+# concurrent runs would both claim the same N.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Skips the CLI's dependency-version check, which reaches out to Expo's API
+  # and has crashed on a double-read of the response.
+  EXPO_OFFLINE: '1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # the daily counter is derived from tags
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Verify map generator
+        run: npm run check:mapgen
+
+      - name: Derive version from today's date
+        id: version
+        run: |
+          echo "UTC now: $(date -u +'%F %H:%M')"
+          echo "KST now: $(TZ=Asia/Seoul date +'%F %H:%M')"
+          day=$(TZ=Asia/Seoul date +%F)
+          # highest N already used today, across tags like 2026-08-20-3
+          last=$(git tag --list "$day-*" | sed "s#^$day-##" | grep -E '^[0-9]+$' | sort -n | tail -1)
+          n=$(( ${last:-0} + 1 ))
+          echo "version=$day - $n" >> "$GITHUB_OUTPUT"
+          echo "tag=$day-$n" >> "$GITHUB_OUTPUT"
+          echo "Deploying as '$day - $n' (tag $day-$n)"
+
+      - name: Stamp the version shown on the home screen
+        run: |
+          printf "export const APP_VERSION = '%s';\n" "${{ steps.version.outputs.version }}" \
+            > src/constants/version.ts
+          cat src/constants/version.ts
+
+      - name: Export web bundle
+        env:
+          # Pages serves a project site from /<repo>/, and the bundle must be
+          # built against that prefix or every asset 404s.
+          PAGES_BASE_URL: /${{ github.event.repository.name }}
+        run: npx expo export --platform web --output-dir dist
+
+      - name: Disable Jekyll
+        # Pages runs Jekyll by default, which drops directories beginning with an
+        # underscore -- and the JS bundle lives in _expo/static/.
+        run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  tag:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag the deployed commit
+        run: |
+          tag='${{ needs.build.outputs.tag }}'
+          git tag "$tag"
+          git push origin "$tag"
+          echo "Tagged $GITHUB_SHA as $tag"
