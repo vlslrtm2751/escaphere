@@ -13,7 +13,13 @@ export const DIFFICULTY_CONFIG: Record<
     minWalls: number;
     maxWalls: number;
     undoLimit: number;
+    /**
+     * Shortest-solution length to aim for. Each board draws its target from
+     * [minSolutionLength, maxSolutionLength], so boards of the same difficulty
+     * do not all come out the same size.
+     */
     minSolutionLength: number;
+    maxSolutionLength: number;
     /**
      * Moves that must be available from the spawn. Below this the board reads as
      * "there is only one way to go" and solves itself. 7x7 has too little room
@@ -28,6 +34,7 @@ export const DIFFICULTY_CONFIG: Record<
     maxWalls: 20,
     undoLimit: 5,
     minSolutionLength: 7,
+    maxSolutionLength: 9,
     minStartOptions: 2,
   },
   normal: {
@@ -36,6 +43,7 @@ export const DIFFICULTY_CONFIG: Record<
     maxWalls: 32,
     undoLimit: 3,
     minSolutionLength: 10,
+    maxSolutionLength: 13,
     minStartOptions: 3,
   },
   hard: {
@@ -43,7 +51,8 @@ export const DIFFICULTY_CONFIG: Record<
     minWalls: 32,
     maxWalls: 48,
     undoLimit: 1,
-    minSolutionLength: 15,
+    minSolutionLength: 16,
+    maxSolutionLength: 18,
     minStartOptions: 3,
   },
   hardcore: {
@@ -51,7 +60,8 @@ export const DIFFICULTY_CONFIG: Record<
     minWalls: 46,
     maxWalls: 66,
     undoLimit: 1,
-    minSolutionLength: 22,
+    minSolutionLength: 23,
+    maxSolutionLength: 25,
     minStartOptions: 3,
   },
 };
