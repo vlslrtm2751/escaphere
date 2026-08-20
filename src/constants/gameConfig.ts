@@ -4,32 +4,55 @@ export const DIFFICULTY_CONFIG: Record<
   Difficulty,
   {
     gridSize: number;
+    /**
+     * Total walled cells to aim for — the solution path AND its decoy branches.
+     * The path alone costs minSolutionLength - 1, so the budget has to clear
+     * that comfortably or there is no room left to build anything to choose
+     * between.
+     */
     minWalls: number;
     maxWalls: number;
     undoLimit: number;
     minSolutionLength: number;
+    /**
+     * Moves that must be available from the spawn. Below this the board reads as
+     * "there is only one way to go" and solves itself. 7x7 has too little room
+     * to guarantee three, so easy asks for two.
+     */
+    minStartOptions: number;
   }
 > = {
   easy: {
     gridSize: 7,
-    minWalls: 4,
-    maxWalls: 7,
+    minWalls: 12,
+    maxWalls: 20,
     undoLimit: 5,
     minSolutionLength: 7,
+    minStartOptions: 2,
   },
   normal: {
     gridSize: 9,
-    minWalls: 8,
-    maxWalls: 13,
+    minWalls: 20,
+    maxWalls: 32,
     undoLimit: 3,
     minSolutionLength: 10,
+    minStartOptions: 3,
   },
   hard: {
     gridSize: 11,
-    minWalls: 14,
-    maxWalls: 22,
+    minWalls: 32,
+    maxWalls: 48,
     undoLimit: 1,
     minSolutionLength: 15,
+    minStartOptions: 3,
+  },
+  hardcore: {
+    gridSize: 13,
+    minWalls: 46,
+    maxWalls: 66,
+    undoLimit: 1,
+    minSolutionLength: 22,
+    minStartOptions: 3,
   },
 };
 

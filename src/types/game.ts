@@ -1,4 +1,4 @@
-export type Difficulty = 'easy' | 'normal' | 'hard';
+export type Difficulty = 'easy' | 'normal' | 'hard' | 'hardcore';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
