@@ -3,6 +3,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import { GameState } from '../../types/game';
 import { useTheme } from '../../context/ThemeContext';
 import { GridCell } from './GridCell';
+import { WallRenderer } from './WallRenderer';
 import { ExitTile } from './ExitTile';
 import { PlayerOrb } from './PlayerOrb';
 import { HintPathOverlay } from './HintPathOverlay';
@@ -40,10 +41,9 @@ export function GameBoard({ state, onRespawnComplete }: Props) {
       ]}
     >
       {state.grid.map((row, ri) =>
-        row.map((cell, ci) => (
+        row.map((_cell, ci) => (
           <GridCell
             key={`${ri}-${ci}`}
-            walls={cell}
             cellSize={cellSize}
             isHinted={hintedCells.has(`${ri},${ci}`)}
           />
@@ -54,6 +54,11 @@ export function GameBoard({ state, onRespawnComplete }: Props) {
         <HintPathOverlay
           steps={state.hint.steps}
           revealedCount={state.hint.revealedCount}
+          cellSize={cellSize}
+        />
+        <WallRenderer
+          grid={state.grid}
+          gridSize={state.gridSize}
           cellSize={cellSize}
         />
         <PlayerOrb

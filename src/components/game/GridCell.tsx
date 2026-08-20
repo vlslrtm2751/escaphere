@@ -1,16 +1,18 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { CellWalls } from '../../types/game';
 import { useTheme } from '../../context/ThemeContext';
-import { WallRenderer } from './WallRenderer';
 
 type Props = {
-  walls: CellWalls;
   cellSize: number;
   isHinted: boolean;
 };
 
-export function GridCell({ walls, cellSize, isHinted }: Props) {
+/**
+ * Background and grid line for one cell. Walls are NOT drawn here — they belong
+ * to the boundary between two cells, so WallRenderer draws them as one collapsed
+ * layer over the whole board.
+ */
+export function GridCell({ cellSize, isHinted }: Props) {
   const { theme } = useTheme();
 
   return (
@@ -24,16 +26,12 @@ export function GridCell({ walls, cellSize, isHinted }: Props) {
           borderColor: theme.border,
         },
       ]}
-    >
-      <WallRenderer walls={walls} cellSize={cellSize} />
-    </View>
+    />
   );
 }
 
 const styles = StyleSheet.create({
   cell: {
     borderWidth: 0.5,
-    position: 'relative',
-    overflow: 'hidden',
   },
 });
