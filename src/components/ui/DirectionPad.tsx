@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Direction } from '../../types/game';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -9,13 +9,20 @@ type Props = {
 
 export function DirectionPad({ onPress }: Props) {
   const { theme } = useTheme();
+  const { height } = useWindowDimensions();
 
-  const btnStyle = [styles.btn, { backgroundColor: theme.dpad }];
-  const textStyle = [styles.btnText, { color: theme.text }];
+  // The pad used to be a fixed 220px tall, a third of a short phone's screen,
+  // leaving the board too little room. Scale it with the screen instead, with a
+  // floor that keeps the buttons comfortably tappable.
+  const size = Math.round(Math.min(60, Math.max(44, height * 0.072)));
+  const gap = Math.max(4, Math.round(size * 0.1));
+
+  const btnStyle = [styles.btn, { width: size, height: size, backgroundColor: theme.dpad }];
+  const textStyle = [styles.btnText, { color: theme.text, fontSize: Math.round(size * 0.37) }];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.row}>
+    <View style={[styles.container, { gap }]}>
+      <View style={[styles.row, { gap }]}>
         <TouchableOpacity
           style={btnStyle}
           onPress={() => onPress('up')}
@@ -25,7 +32,7 @@ export function DirectionPad({ onPress }: Props) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.row}>
+      <View style={[styles.row, { gap }]}>
         <TouchableOpacity
           style={btnStyle}
           onPress={() => onPress('left')}
@@ -34,7 +41,7 @@ export function DirectionPad({ onPress }: Props) {
           <Text style={textStyle}>◀</Text>
         </TouchableOpacity>
 
-        <View style={[styles.center, { backgroundColor: 'transparent' }]} />
+        <View style={{ width: size, height: size }} />
 
         <TouchableOpacity
           style={btnStyle}
@@ -45,7 +52,7 @@ export function DirectionPad({ onPress }: Props) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.row}>
+      <View style={[styles.row, { gap }]}>
         <TouchableOpacity
           style={btnStyle}
           onPress={() => onPress('down')}
@@ -58,30 +65,18 @@ export function DirectionPad({ onPress }: Props) {
   );
 }
 
-const BTN_SIZE = 60;
-
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    gap: 6,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
   },
   btn: {
-    width: BTN_SIZE,
-    height: BTN_SIZE,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  center: {
-    width: BTN_SIZE,
-    height: BTN_SIZE,
-  },
-  btnText: {
-    fontSize: 22,
-  },
+  btnText: {},
 });

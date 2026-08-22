@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { GameState } from '../../types/game';
 import { useTheme } from '../../context/ThemeContext';
 import { GridCell } from './GridCell';
@@ -11,15 +11,23 @@ import { HintPathOverlay } from './HintPathOverlay';
 type Props = {
   state: GameState;
   onRespawnComplete: () => void;
+  /**
+   * The space the parent has actually set aside for the board, measured by it.
+   *
+   * Sizing from the window width alone made the board taller than the room left
+   * between the header and the toolbar on short screens, and a centred child
+   * that does not fit spills over both of them.
+   */
+  available: { width: number; height: number };
 };
 
-const PADDING = 8;
+/** Never grow past this, however much room a desktop window offers. */
+const MAX_BOARD = 460;
 
-export function GameBoard({ state, onRespawnComplete }: Props) {
+export function GameBoard({ state, onRespawnComplete, available }: Props) {
   const { theme } = useTheme();
-  const { width } = Dimensions.get('window');
-  const boardSize = Math.min(width - PADDING * 2, 400);
-  const cellSize = Math.floor(boardSize / state.gridSize);
+  const side = Math.min(available.width, available.height, MAX_BOARD);
+  const cellSize = Math.max(1, Math.floor(side / state.gridSize));
 
   // Build hinted cells set
   const hintedCells = new Set<string>();
