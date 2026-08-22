@@ -14,7 +14,7 @@ export function GameHeader({ state, onPause }: Props) {
   const optimalMoves = state.hint.solutionPath.length;
 
   return (
-    <View style={[styles.header, { backgroundColor: theme.surface }]}>
+    <View testID="game-header" style={[styles.header, { backgroundColor: theme.surface }]}>
       <TouchableOpacity onPress={onPause} style={styles.pauseBtn} activeOpacity={0.7}>
         <Text style={[styles.pauseIcon, { color: theme.text }]}>⏸</Text>
       </TouchableOpacity>

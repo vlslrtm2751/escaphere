@@ -69,7 +69,18 @@ jobs:
           # Pages serves a project site from /<repo>/, and the bundle must be
           # built against that prefix or every asset 404s.
           PAGES_BASE_URL: /${{ github.event.repository.name }}
-        run: npx expo export --platform web --output-dir dist
+        run: npm run build:web
+
+      - name: Install Chromium for the layout check
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify game screen layout
+        # Runs against the artifact just built, not a dev server, so it measures
+        # exactly what is about to ship. The base path has to match the export's
+        # or the local server cannot find the bundle.
+        env:
+          PAGES_BASE_URL: /${{ github.event.repository.name }}
+        run: npm run check:layout
 
       - name: Disable Jekyll
         # Pages runs Jekyll by default, which drops directories beginning with an

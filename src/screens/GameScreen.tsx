@@ -138,7 +138,7 @@ export function GameScreen({ difficulty, onHome }: Props) {
         onRefresh={() => refresh(difficulty)}
       />
 
-      <View style={styles.padContainer}>
+      <View testID="pad-area" style={styles.padContainer}>
         <DirectionPad onPress={handleMove} />
       </View>
 

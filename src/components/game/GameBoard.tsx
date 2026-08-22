@@ -39,6 +39,7 @@ export function GameBoard({ state, onRespawnComplete, available }: Props) {
 
   return (
     <View
+      testID="game-board"
       style={[
         styles.board,
         {
