@@ -19,7 +19,7 @@ export function GameToolbar({ state, onHint, onUndo, onRefresh }: Props) {
   const undoDisabled = state.undoRemaining <= 0 || state.undoStack.length === 0;
 
   return (
-    <View style={[styles.toolbar, { backgroundColor: theme.surface }]}>
+    <View testID="game-toolbar" style={[styles.toolbar, { backgroundColor: theme.surface }]}>
       <TouchableOpacity
         style={[styles.btn, { opacity: hintDisabled ? 0.4 : 1 }]}
         onPress={onHint}

@@ -21,7 +21,7 @@ export function DirectionPad({ onPress }: Props) {
   const textStyle = [styles.btnText, { color: theme.text, fontSize: Math.round(size * 0.37) }];
 
   return (
-    <View style={[styles.container, { gap }]}>
+    <View testID="direction-pad" style={[styles.container, { gap }]}>
       <View style={[styles.row, { gap }]}>
         <TouchableOpacity
           style={btnStyle}
