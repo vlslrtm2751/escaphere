@@ -62,7 +62,8 @@ test('탈출구에 닿으면 cleared 상태와 exit 이벤트가 된다', () => 
 
 test('playing이 아니면 이벤트도 상태도 바뀌지 않는다', () => {
   const state = makeState({ grid: emptyGrid(7), status: 'cleared' });
-  assert.deepStrictEqual(resolveMove(state, 'up'), state);
+  // 같은 객체여야 한다 — 구조만 같은 복사본은 React의 렌더 생략을 잃는다
+  assert.strictEqual(resolveMove(state, 'up'), state);
 });
 
 test('resolveRespawn은 중앙으로 돌려보내고 이동수와 되돌리기를 초기화한다', () => {
@@ -77,9 +78,13 @@ test('resolveRespawn은 중앙으로 돌려보내고 이동수와 되돌리기�
   assert.strictEqual(next.undoRemaining, 5);    // easy의 undoLimit
   assert.deepStrictEqual(next.undoStack, []);
   assert.strictEqual(next.status, 'playing');
+  // PlayerOrb는 날아가는 연출을 respawnDir에 걸어 둔다 — 비우지 않으면 공이 밖에 남는다
+  assert.strictEqual(next.respawnDir, null);
+  // 이벤트는 싣지 않는다 — 'out'이 이미 울렸다
+  assert.deepStrictEqual(next.lastEvent, state.lastEvent);
 });
 
 test('resolveRespawn은 respawning이 아니면 아무것도 하지 않는다', () => {
   const state = makeState({ status: 'playing' });
-  assert.deepStrictEqual(resolveRespawn(state), state);
+  assert.strictEqual(resolveRespawn(state), state);
 });

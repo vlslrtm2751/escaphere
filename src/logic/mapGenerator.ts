@@ -642,8 +642,10 @@ export function generateMap(
       usedCount: 0,
     },
     undoStack: [],
-    // seq 0 means "nothing has happened yet" — a freshly generated board must
-    // not make a sound before the player has touched it.
-    lastEvent: { kind: 'moved', seq: 0 },
+    // A board is born with nothing having happened to it. 'none' maps to no
+    // feedback, so regenerating mid-game — which resets seq to 0 and thereby
+    // trips any [seq]-keyed listener — cannot make a sound on an untouched
+    // board.
+    lastEvent: { kind: 'none', seq: 0 },
   };
 }

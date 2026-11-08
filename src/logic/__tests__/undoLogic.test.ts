@@ -30,6 +30,7 @@ test('applyUndo는 마지막 스냅샷을 복원하고 남은 횟수를 하나 �
   assert.strictEqual(next.moveCount, 1);
   assert.strictEqual(next.undoRemaining, 1);
   assert.deepStrictEqual(next.undoStack, []);
+  assert.strictEqual(next.lastEvent.kind, 'undo');
 });
 
 test('pushUndo는 undoRemaining이 0이면 스택을 늘리지 않는다', () => {
