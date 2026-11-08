@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "check:mapgen": "tsc -p scripts/tsconfig.mapgen.json && node scripts/check-mapgen.js",
     "build:web": "expo export --platform web --output-dir dist",
-    "check:layout": "node scripts/check-layout.js"
+    "check:layout": "node scripts/check-layout.js",
+    "test:logic": "tsc -p scripts/tsconfig.mapgen.json && node --test .mapgen-build/logic/__tests__/*.test.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.0.1",
