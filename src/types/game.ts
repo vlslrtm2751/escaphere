@@ -37,13 +37,26 @@ export type UndoSnapshot = {
   moveCount: number;
 };
 
-/** What just happened to the board. Drives sound and vibration. */
-export type GameEventKind = 'moved' | 'blocked' | 'out' | 'exit' | 'undo' | 'hint';
+/**
+ * What just happened to the board. Drives sound and vibration.
+ *
+ * `'none'` is the one kind no action ever produces: it is what a board is born
+ * with, and it carries no feedback. Everything else is a real event.
+ */
+export type GameEventKind = 'none' | 'moved' | 'blocked' | 'out' | 'exit' | 'undo' | 'hint';
 
 /**
  * `seq` rises by one per event, so a listener can tell two identical events
- * apart — walking into the same wall twice has to be felt twice. `seq: 0`
- * means nothing has happened yet on this board.
+ * apart — walking into the same wall twice has to be felt twice. A listener
+ * therefore watches `seq`, not `kind`.
+ *
+ * A fresh board carries `{ kind: 'none', seq: 0 }`: nothing has happened on it
+ * yet. The neutral kind is what makes that safe. Regenerating mid-game
+ * (재생성, next stage, restart) resets `seq` to 0, which a `[seq]`-keyed
+ * listener sees as a change and fires on — so the kind it then reads has to be
+ * one that maps to no sound and no vibration. `seq === 0` is still worth
+ * guarding on, but with `'none'` it is no longer the only thing standing
+ * between a regenerated board and a spurious noise.
  */
 export type GameEvent = {
   kind: GameEventKind;
