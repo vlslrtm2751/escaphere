@@ -37,6 +37,19 @@ export type UndoSnapshot = {
   moveCount: number;
 };
 
+/** What just happened to the board. Drives sound and vibration. */
+export type GameEventKind = 'moved' | 'blocked' | 'out' | 'exit' | 'undo' | 'hint';
+
+/**
+ * `seq` rises by one per event, so a listener can tell two identical events
+ * apart — walking into the same wall twice has to be felt twice. `seq: 0`
+ * means nothing has happened yet on this board.
+ */
+export type GameEvent = {
+  kind: GameEventKind;
+  seq: number;
+};
+
 export type GameState = {
   gridSize: number;
   difficulty: Difficulty;
@@ -51,6 +64,7 @@ export type GameState = {
   respawnDir: Direction | null;
   hint: HintState;
   undoStack: UndoSnapshot[];
+  lastEvent: GameEvent;
 };
 
 export type ClearRecord = {

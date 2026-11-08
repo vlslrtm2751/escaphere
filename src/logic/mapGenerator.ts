@@ -642,5 +642,8 @@ export function generateMap(
       usedCount: 0,
     },
     undoStack: [],
+    // seq 0 means "nothing has happened yet" — a freshly generated board must
+    // not make a sound before the player has touched it.
+    lastEvent: { kind: 'moved', seq: 0 },
   };
 }

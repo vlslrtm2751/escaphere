@@ -1,5 +1,6 @@
-import { CellWalls, Direction, HintState, HintStep, Position } from '../types/game';
+import { CellWalls, Direction, GameState, HintState, HintStep, Position } from '../types/game';
 import { simulateMove } from './moveLogic';
+import { withEvent } from './gameEvents';
 
 export function precomputeHintSteps(
   grid: CellWalls[][],
@@ -26,4 +27,15 @@ export function revealNextHint(hint: HintState): HintState {
     revealedCount: hint.revealedCount + 1,
     usedCount: hint.usedCount + 1,
   };
+}
+
+/**
+ * Reveal one more hint step and say so. When there is nothing left to reveal
+ * `revealNextHint` hands back the very hint it was given, and this returns the
+ * state untouched — no event, so a dead press stays silent.
+ */
+export function resolveHint(state: GameState): GameState {
+  const hint = revealNextHint(state.hint);
+  if (hint === state.hint) return state;
+  return withEvent({ ...state, hint }, 'hint');
 }

@@ -32,6 +32,7 @@ export function makeState(overrides: Partial<GameState> = {}): GameState {
       usedCount: 0,
     },
     undoStack: [],
+    lastEvent: { kind: 'moved', seq: 0 },
     ...overrides,
   };
 }
