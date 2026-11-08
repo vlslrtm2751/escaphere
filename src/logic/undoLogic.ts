@@ -15,6 +15,7 @@ export function pushUndo(state: GameState): GameState {
 }
 
 export function applyUndo(state: GameState): GameState {
+  if (state.undoRemaining <= 0) return state;
   if (state.undoStack.length === 0) return state;
   const prev = state.undoStack[state.undoStack.length - 1];
   return {

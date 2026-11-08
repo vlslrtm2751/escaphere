@@ -6,7 +6,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": [],
+    "types": ["node"],
     "rootDir": "../src",
     "outDir": "../.mapgen-build"
   },
