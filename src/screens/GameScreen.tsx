@@ -52,9 +52,6 @@ export function GameScreen({ difficulty, onHome }: Props) {
       playSfx('clear');
       haptic.triggerClear();
       handleClear();
-    } else if (state.status === 'gameover') {
-      playSfx('gameover');
-      haptic.triggerGameover();
     }
   }, [state.status]);
 
