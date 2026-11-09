@@ -19,23 +19,18 @@ export function playSfxSound(key: SfxKey): void {
       players.set(key, player);
     }
 
-    // A repeat press should restart the clip from 0, not overlap it. If the
-    // player is idle, play() alone already starts at 0. If it's mid-clip,
-    // play() has to wait for the seek to actually land first: seekTo is a
-    // genuinely async operation on native (its type is Promise<void>, unlike
-    // the plain synchronous `playing`/`volume`/`loop` properties) even though
-    // its web implementation happens to run synchronously under the hood.
-    // Guarding on `playing` keeps the common (idle) press fully synchronous —
-    // feedback stays immediate — and only pays the promise-chain cost on the
-    // actual restart path, which carries its own .catch() so a rejected seek
-    // never escapes as an unhandled rejection.
-    if (player.playing) {
-      // Mid-clip: restart from the top. seekTo is genuinely async on native, so
-      // play() has to wait for it or the restart may not land.
-      player.seekTo(0).then(() => player.play()).catch(() => {});
-    } else {
-      player.play();
-    }
+    // Always seek before playing, unconditionally — no `playing` check. Two
+    // facts rule that out: seekTo is genuinely async on native, so play() has
+    // to wait for it to land rather than firing right after it; and a player
+    // whose clip already finished reports `playing: false` with its position
+    // parked at the end, not at 0, so a bare play() from there replays nothing
+    // and a `playing` guard would wrongly treat "finished" the same as "never
+    // played" and skip the seek it still needs. Seeking first is what actually
+    // moves the player out of that ended position, in all three states a
+    // cached player can be in — never played, mid-clip, or finished. The
+    // chain carries its own .catch() so a rejected seek (or a throw inside
+    // play()) never escapes as an unhandled rejection.
+    player.seekTo(0).then(() => player.play()).catch(() => {});
   } catch {
     // A missing or broken sound must never break the game — fail silently,
     // same as src/storage/asyncStorage.ts does for storage errors.
