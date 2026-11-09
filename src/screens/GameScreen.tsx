@@ -110,9 +110,9 @@ export function GameScreen({ difficulty, onHome }: Props) {
   };
 
   const handleMove = useCallback((direction: Direction) => {
-    if (state.status !== 'playing') return;
+    if (state.status !== 'playing' || paused || settingsOpen) return;
     move(direction);
-  }, [state.status, move]);
+  }, [state.status, move, paused, settingsOpen]);
 
   // PC keyboard arrow key support
   useEffect(() => {

@@ -26,6 +26,13 @@ test('mergeSettings는 타입이 틀린 값을 기본값으로 되돌린다', ()
   assert.strictEqual(merged.theme, DEFAULT_SETTINGS.theme);
 });
 
+// theme의 거부 경로(빠진 값, 잘못된 값)는 위에서 이미 고정했다. 수락 경로도
+// 대칭적으로 고정해 둔다 -- 그렇지 않으면 저장된 'light'가 되돌려질 때
+// 조용히 기본값(dark)으로 리그레션해도 테스트가 잡아내지 못한다.
+test('mergeSettings는 유효하게 저장된 theme 값을 그대로 유지한다', () => {
+  assert.strictEqual(mergeSettings({ theme: 'light' }).theme, 'light');
+});
+
 test('mergeSettings는 객체가 아닌 입력에도 기본값을 준다', () => {
   for (const raw of [undefined, 42, 'x', []]) {
     assert.deepStrictEqual(mergeSettings(raw), DEFAULT_SETTINGS);

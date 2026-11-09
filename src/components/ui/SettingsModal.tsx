@@ -46,7 +46,7 @@ export function SettingsModal({ visible, onClose }: Props) {
   const { settings, updateSettings } = useSettings();
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View testID="settings-modal" style={[styles.card, { backgroundColor: theme.surface }]}>
           <Text style={[styles.title, { color: theme.text }]}>설정</Text>

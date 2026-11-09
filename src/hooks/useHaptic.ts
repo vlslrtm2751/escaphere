@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSettings } from '../context/SettingsContext';
 
@@ -6,18 +7,18 @@ export function useHaptic() {
   const { settings } = useSettings();
 
   const triggerMove = useCallback(() => {
-    if (!settings.hapticOn) return;
+    if (Platform.OS === 'web' || !settings.hapticOn) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   }, [settings.hapticOn]);
 
   const triggerWall = useCallback(() => {
-    if (!settings.hapticOn) return;
+    if (Platform.OS === 'web' || !settings.hapticOn) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
   }, [settings.hapticOn]);
 
   const triggerOut = useCallback(() => {
-    if (!settings.hapticOn) return;
+    if (Platform.OS === 'web' || !settings.hapticOn) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     setTimeout(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
@@ -25,7 +26,7 @@ export function useHaptic() {
   }, [settings.hapticOn]);
 
   const triggerClear = useCallback(() => {
-    if (!settings.hapticOn) return;
+    if (Platform.OS === 'web' || !settings.hapticOn) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   }, [settings.hapticOn]);
 
