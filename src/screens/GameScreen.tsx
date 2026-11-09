@@ -17,6 +17,7 @@ import { GameHeader } from '../components/ui/GameHeader';
 import { GameToolbar } from '../components/ui/GameToolbar';
 import { DirectionPad } from '../components/ui/DirectionPad';
 import { PauseMenu } from '../components/ui/PauseMenu';
+import { SettingsModal } from '../components/ui/SettingsModal';
 import { ClearModal } from '../components/ui/ClearModal';
 import { saveRecord, getBestRecord, saveStreak, loadStreak } from '../storage/asyncStorage';
 
@@ -48,6 +49,7 @@ export function GameScreen({ difficulty, onHome }: Props) {
   const { playSfx } = useSfx();
   const haptic = useHaptic();
   const [paused, setPaused] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isNewRecord, setIsNewRecord] = useState(false);
 
   // The board sizes itself to the space this screen gives it, rather than to the
@@ -171,11 +173,14 @@ export function GameScreen({ difficulty, onHome }: Props) {
           setPaused(false);
           restart();
         }}
+        onSettings={() => setSettingsOpen(true)}
         onHome={() => {
           setPaused(false);
           onHome();
         }}
       />
+
+      <SettingsModal visible={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       <ClearModal
         visible={state.status === 'cleared'}
