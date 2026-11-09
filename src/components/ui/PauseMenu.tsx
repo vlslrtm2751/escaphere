@@ -6,10 +6,11 @@ type Props = {
   visible: boolean;
   onResume: () => void;
   onRestart: () => void;
+  onSettings: () => void;
   onHome: () => void;
 };
 
-export function PauseMenu({ visible, onResume, onRestart, onHome }: Props) {
+export function PauseMenu({ visible, onResume, onRestart, onSettings, onHome }: Props) {
   const { theme } = useTheme();
 
   return (
@@ -32,6 +33,14 @@ export function PauseMenu({ visible, onResume, onRestart, onHome }: Props) {
             activeOpacity={0.8}
           >
             <Text style={[styles.btnText, { color: theme.text }]}>다시하기</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: theme.dpad }]}
+            onPress={onSettings}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.btnText, { color: theme.text }]}>설정</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

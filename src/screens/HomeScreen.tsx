@@ -10,6 +10,8 @@ import { Difficulty, ClearRecord, StreakData } from '../types/game';
 import { useTheme } from '../context/ThemeContext';
 import { SfxToggleButton } from '../components/ui/SfxToggleButton';
 import { ThemeToggleButton } from '../components/ui/ThemeToggleButton';
+import { SettingsModal } from '../components/ui/SettingsModal';
+import { IconButton } from '../components/common/IconButton';
 import { Badge } from '../components/common/Badge';
 import { loadRecords, loadStreak } from '../storage/asyncStorage';
 import { APP_VERSION } from '../constants/version';
@@ -33,6 +35,7 @@ export function HomeScreen({ selectedDifficulty, onDifficultyChange, onStart }: 
   const { theme } = useTheme();
   const [records, setRecords] = useState<ClearRecord[]>([]);
   const [streak, setStreak] = useState<StreakData>({ currentStreak: 0, bestStreak: 0 });
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadRecords().then(setRecords);
@@ -46,10 +49,15 @@ export function HomeScreen({ selectedDifficulty, onDifficultyChange, onStart }: 
       {/* TopBar */}
       <View style={styles.topBar}>
         <SfxToggleButton />
+        <IconButton size={40} onPress={() => setSettingsOpen(true)} accessibilityLabel="설정">
+          <Text style={[styles.gearIcon, { color: theme.text }]}>⚙</Text>
+        </IconButton>
         <View style={{ flex: 1 }} />
         <Text style={[styles.version, { color: theme.subText }]}>{APP_VERSION}</Text>
         <ThemeToggleButton />
       </View>
+
+      <SettingsModal visible={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       {/* Title */}
       <View style={styles.titleContainer}>
@@ -146,6 +154,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: 0.5,
+  },
+  gearIcon: {
+    fontSize: 20,
   },
   titleContainer: {
     alignItems: 'center',
