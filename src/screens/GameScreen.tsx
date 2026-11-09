@@ -6,11 +6,12 @@ import {
   Platform,
   LayoutChangeEvent,
 } from 'react-native';
-import { Difficulty, Direction } from '../types/game';
+import { Difficulty, Direction, GameEventKind } from '../types/game';
 import { useTheme } from '../context/ThemeContext';
 import { useGameState } from '../hooks/useGameState';
 import { useSfx } from '../hooks/useSfx';
 import { useHaptic } from '../hooks/useHaptic';
+import { SfxKey } from '../constants/sounds';
 import { GameBoard } from '../components/game/GameBoard';
 import { GameHeader } from '../components/ui/GameHeader';
 import { GameToolbar } from '../components/ui/GameToolbar';
@@ -22,6 +23,23 @@ import { saveRecord, getBestRecord, saveStreak, loadStreak } from '../storage/as
 type Props = {
   difficulty: Difficulty;
   onHome: () => void;
+};
+
+// Haptic trigger named by key, not called directly, so this table reads as a
+// flat list of "event -> sound, haptic" rather than a pile of inline calls.
+// Record<GameEventKind, ...> makes the mapping exhaustive at the type level:
+// add a member to GameEventKind without a row here and this constant stops
+// compiling.
+type HapticKey = keyof ReturnType<typeof useHaptic>;
+
+const FEEDBACK: Record<GameEventKind, { sound: SfxKey | null; haptic: HapticKey | null }> = {
+  none:    { sound: null,    haptic: null },
+  moved:   { sound: 'move',  haptic: 'triggerMove' },
+  blocked: { sound: 'wall',  haptic: 'triggerWall' },
+  out:     { sound: 'out',   haptic: 'triggerOut' },
+  exit:    { sound: 'clear', haptic: 'triggerClear' },
+  undo:    { sound: 'undo',  haptic: null },
+  hint:    { sound: 'hint',  haptic: null },
 };
 
 export function GameScreen({ difficulty, onHome }: Props) {
@@ -46,11 +64,20 @@ export function GameScreen({ difficulty, onHome }: Props) {
     );
   }, []);
 
-  // Handle clear
+  // Event -> feedback (sound + haptic). Keyed on seq alone, not kind and not
+  // the event object: a second consecutive 'blocked' move has the same kind
+  // as the first but a higher seq, and it must still be felt.
+  useEffect(() => {
+    if (state.lastEvent.seq === 0) return; // fresh board — nothing happened yet
+    const feedback = FEEDBACK[state.lastEvent.kind];
+    if (feedback.sound) playSfx(feedback.sound);
+    if (feedback.haptic) haptic[feedback.haptic]();
+  }, [state.lastEvent.seq]);
+
+  // Handle clear record-keeping. Feedback for 'cleared' is handled above via
+  // the 'exit' event — this effect only persists the result.
   useEffect(() => {
     if (state.status === 'cleared') {
-      playSfx('clear');
-      haptic.triggerClear();
       handleClear();
     }
   }, [state.status]);
@@ -101,14 +128,12 @@ export function GameScreen({ difficulty, onHome }: Props) {
 
   const handleHint = useCallback(() => {
     hint();
-    playSfx('hint');
-  }, [hint, playSfx]);
+  }, [hint]);
 
   const handleUndo = useCallback(() => {
     if (state.undoRemaining <= 0 || state.undoStack.length === 0) return;
     undo();
-    playSfx('undo');
-  }, [state, undo, playSfx]);
+  }, [state, undo]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>

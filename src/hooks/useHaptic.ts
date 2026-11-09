@@ -16,7 +16,7 @@ export function useHaptic() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
   }, [settings.hapticOn]);
 
-  const triggerGameover = useCallback(() => {
+  const triggerOut = useCallback(() => {
     if (!settings.hapticOn) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     setTimeout(() => {
@@ -29,5 +29,5 @@ export function useHaptic() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   }, [settings.hapticOn]);
 
-  return { triggerMove, triggerWall, triggerGameover, triggerClear };
+  return { triggerMove, triggerWall, triggerOut, triggerClear };
 }
