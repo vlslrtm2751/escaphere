@@ -19,7 +19,7 @@ import { DirectionPad } from '../components/ui/DirectionPad';
 import { PauseMenu } from '../components/ui/PauseMenu';
 import { SettingsModal } from '../components/ui/SettingsModal';
 import { ClearModal } from '../components/ui/ClearModal';
-import { saveRecord, getBestRecord, saveStreak, loadStreak } from '../storage/asyncStorage';
+import { incrementOptimalClears, saveStreak, loadStreak } from '../storage/asyncStorage';
 
 type Props = {
   difficulty: Difficulty;
@@ -50,7 +50,6 @@ export function GameScreen({ difficulty, onHome }: Props) {
   const haptic = useHaptic();
   const [paused, setPaused] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [isNewRecord, setIsNewRecord] = useState(false);
 
   // The board sizes itself to the space this screen gives it, rather than to the
   // window: the header, toolbar and pad take a fixed share of the height, and a
@@ -85,16 +84,12 @@ export function GameScreen({ difficulty, onHome }: Props) {
   }, [state.status]);
 
   const handleClear = async () => {
-    const existing = await getBestRecord(state.difficulty);
-    if (!existing || state.moveCount < existing.bestMoveCount) {
-      await saveRecord({
-        difficulty: state.difficulty,
-        bestMoveCount: state.moveCount,
-        lastUpdated: new Date().toISOString(),
-      });
-      setIsNewRecord(true);
-    } else {
-      setIsNewRecord(false);
+    // Counts toward the difficulty's optimal-clear tally whenever this run
+    // matched the board's own optimal length — not a "best" comparison, since
+    // boards of the same difficulty don't all draw the same optimal length.
+    const optimalMoves = state.hint.solutionPath.length;
+    if (state.moveCount === optimalMoves) {
+      await incrementOptimalClears(state.difficulty);
     }
 
     // Update streak
@@ -185,15 +180,8 @@ export function GameScreen({ difficulty, onHome }: Props) {
       <ClearModal
         visible={state.status === 'cleared'}
         state={state}
-        isNewRecord={isNewRecord}
-        onNext={() => {
-          setIsNewRecord(false);
-          nextStage();
-        }}
-        onHome={() => {
-          setIsNewRecord(false);
-          onHome();
-        }}
+        onNext={nextStage}
+        onHome={onHome}
       />
     </SafeAreaView>
   );

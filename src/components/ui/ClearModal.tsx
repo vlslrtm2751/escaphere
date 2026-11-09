@@ -7,12 +7,11 @@ import { Badge } from '../common/Badge';
 type Props = {
   visible: boolean;
   state: GameState;
-  isNewRecord: boolean;
   onNext: () => void;
   onHome: () => void;
 };
 
-export function ClearModal({ visible, state, isNewRecord, onNext, onHome }: Props) {
+export function ClearModal({ visible, state, onNext, onHome }: Props) {
   const { theme } = useTheme();
 
   const optimalMoves = state.hint.solutionPath.length;
@@ -25,10 +24,6 @@ export function ClearModal({ visible, state, isNewRecord, onNext, onHome }: Prop
         <View style={[styles.modal, { backgroundColor: theme.surface }]}>
           <Text style={styles.emoji}>🎉</Text>
           <Text style={[styles.title, { color: theme.text }]}>클리어!</Text>
-
-          {isNewRecord && (
-            <Badge label="🏆 최고기록 갱신!" color={theme.exit} style={styles.badge} />
-          )}
 
           <View style={[styles.stats, { backgroundColor: theme.bg }]}>
             <View style={styles.statRow}>

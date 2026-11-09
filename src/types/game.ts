@@ -80,9 +80,14 @@ export type GameState = {
   lastEvent: GameEvent;
 };
 
+// A clear counts toward this whenever moveCount equals the board's optimal
+// solution length — regardless of hint usage. Boards draw their optimal
+// length from a per-difficulty range (see DIFFICULTY_CONFIG), so this is a
+// count of optimal clears, not a comparable "best" across differently-sized
+// boards the way a raw move count would be.
 export type ClearRecord = {
   difficulty: Difficulty;
-  bestMoveCount: number;
+  optimalClearCount: number;
   lastUpdated: string;
 };
 
