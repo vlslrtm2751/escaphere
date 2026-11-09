@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { precomputeHintSteps, resolveHint } from '../hintLogic';
+import { precomputeHintSteps, resolveHint, isOptimalClear } from '../hintLogic';
 import { emptyGrid, makeState } from './fixtures';
 
 test('더 공개할 단계가 없으면 resolveHint는 같은 객체를 그대로 돌려준다', () => {
@@ -24,6 +24,22 @@ test('공개할 단계가 남아 있으면 resolveHint는 단계를 열고 hint 
   assert.strictEqual(next.hint.usedCount, 1);
   assert.strictEqual(next.lastEvent.kind, 'hint');
   assert.strictEqual(next.lastEvent.seq, 1);
+});
+
+test('isOptimalClear는 이동수가 최적 경로 길이와 같으면 true다', () => {
+  const state = makeState({
+    moveCount: 3,
+    hint: { solutionPath: ['up', 'up', 'right'], steps: [], revealedCount: 0, usedCount: 0 },
+  });
+  assert.strictEqual(isOptimalClear(state), true);
+});
+
+test('isOptimalClear는 이동수가 최적 경로보다 많으면 false다', () => {
+  const state = makeState({
+    moveCount: 5,
+    hint: { solutionPath: ['up', 'up', 'right'], steps: [], revealedCount: 0, usedCount: 0 },
+  });
+  assert.strictEqual(isOptimalClear(state), false);
 });
 
 test('precomputeHintSteps는 방향마다 한 단계씩, 그 이동이 지나는 칸들을 담는다', () => {

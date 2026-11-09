@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { GameState } from '../../types/game';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from '../common/Badge';
+import { isOptimalClear } from '../../logic/hintLogic';
 
 type Props = {
   visible: boolean;
@@ -16,7 +17,7 @@ export function ClearModal({ visible, state, onNext, onHome }: Props) {
 
   const optimalMoves = state.hint.solutionPath.length;
   const isPerfect = state.hint.usedCount === 0;
-  const isOptimal = state.moveCount === optimalMoves;
+  const isOptimal = isOptimalClear(state);
 
   return (
     <Modal visible={visible} transparent animationType="slide">

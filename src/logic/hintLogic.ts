@@ -39,3 +39,14 @@ export function resolveHint(state: GameState): GameState {
   if (hint === state.hint) return state;
   return withEvent({ ...state, hint }, 'hint');
 }
+
+/**
+ * Whether this clear used exactly the board's optimal move count —
+ * regardless of hint usage. The single source for a check that GameScreen
+ * (to decide whether to count it toward the difficulty's optimal-clear
+ * tally) and ClearModal (to decide whether to show the 최적 경로 badge)
+ * both need, so the two can't quietly disagree about what counts.
+ */
+export function isOptimalClear(state: GameState): boolean {
+  return state.moveCount === state.hint.solutionPath.length;
+}
