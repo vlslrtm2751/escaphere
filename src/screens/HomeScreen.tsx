@@ -98,9 +98,11 @@ export function HomeScreen({ selectedDifficulty, onDifficultyChange, onStart }: 
         </View>
       </View>
 
-      {/* Best Records */}
+      {/* Optimal Clears — a tally, not a "best": each board draws its own
+          optimal length, so counting clears that hit it stays meaningful
+          across differently-sized boards the way a raw move count wouldn't. */}
       <View style={[styles.recordBoard, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.sectionTitle, { color: theme.subText }]}>최고 기록</Text>
+        <Text style={[styles.sectionTitle, { color: theme.subText }]}>최적 클리어</Text>
         {DIFFICULTIES.map(diff => {
           const rec = getRecord(diff);
           return (
@@ -109,7 +111,7 @@ export function HomeScreen({ selectedDifficulty, onDifficultyChange, onStart }: 
                 {DIFFICULTY_LABELS[diff]}
               </Text>
               <Text style={[styles.recordValue, { color: rec ? theme.player : theme.subText }]}>
-                {rec ? `${rec.bestMoveCount}회` : '-'}
+                {rec ? `${rec.optimalClearCount}회` : '-'}
               </Text>
             </View>
           );

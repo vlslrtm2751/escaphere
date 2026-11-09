@@ -8,34 +8,51 @@ const KEYS = {
   STREAK: 'escaphere_streak',
 };
 
-export async function saveRecord(record: ClearRecord): Promise<void> {
-  try {
-    const raw = await AsyncStorage.getItem(KEYS.RECORDS);
-    const records: ClearRecord[] = raw ? JSON.parse(raw) : [];
-    const idx = records.findIndex(r => r.difficulty === record.difficulty);
-    if (idx >= 0) {
-      if (record.bestMoveCount < records[idx].bestMoveCount) {
-        records[idx] = record;
-      }
-    } else {
-      records.push(record);
-    }
-    await AsyncStorage.setItem(KEYS.RECORDS, JSON.stringify(records));
-  } catch {}
+// Coerces whatever was stored into the current ClearRecord shape. Needed
+// because the site has been live under the old shape ({ bestMoveCount }) —
+// without this, an old entry's missing optimalClearCount renders as
+// "undefined회" instead of either a real count or the empty "-" state.
+function sanitizeRecord(r: unknown): ClearRecord | null {
+  if (typeof r !== 'object' || r === null) return null;
+  const { difficulty, optimalClearCount, lastUpdated } = r as Record<string, unknown>;
+  if (typeof difficulty !== 'string') return null;
+  return {
+    difficulty: difficulty as Difficulty,
+    optimalClearCount: typeof optimalClearCount === 'number' ? optimalClearCount : 0,
+    lastUpdated: typeof lastUpdated === 'string' ? lastUpdated : new Date(0).toISOString(),
+  };
 }
 
 export async function loadRecords(): Promise<ClearRecord[]> {
   try {
     const raw = await AsyncStorage.getItem(KEYS.RECORDS);
-    return raw ? JSON.parse(raw) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(sanitizeRecord).filter((r): r is ClearRecord => r !== null);
   } catch {
     return [];
   }
 }
 
-export async function getBestRecord(difficulty: Difficulty): Promise<ClearRecord | null> {
+// Called on every clear whose moveCount matched the board's optimal length.
+// Unconditional +1, not a comparison — unlike a "best" move count, this
+// stays meaningful across boards of the same difficulty with different
+// optimal lengths (see ClearRecord).
+export async function incrementOptimalClears(difficulty: Difficulty): Promise<void> {
   const records = await loadRecords();
-  return records.find(r => r.difficulty === difficulty) ?? null;
+  const idx = records.findIndex(r => r.difficulty === difficulty);
+  if (idx >= 0) {
+    records[idx] = {
+      ...records[idx],
+      optimalClearCount: records[idx].optimalClearCount + 1,
+      lastUpdated: new Date().toISOString(),
+    };
+  } else {
+    records.push({ difficulty, optimalClearCount: 1, lastUpdated: new Date().toISOString() });
+  }
+  try {
+    await AsyncStorage.setItem(KEYS.RECORDS, JSON.stringify(records));
+  } catch {}
 }
 
 export async function saveSettings(settings: AppSettings): Promise<void> {
