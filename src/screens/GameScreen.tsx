@@ -20,6 +20,7 @@ import { PauseMenu } from '../components/ui/PauseMenu';
 import { SettingsModal } from '../components/ui/SettingsModal';
 import { ClearModal } from '../components/ui/ClearModal';
 import { incrementOptimalClears, saveStreak, loadStreak } from '../storage/asyncStorage';
+import { isOptimalClear } from '../logic/hintLogic';
 
 type Props = {
   difficulty: Difficulty;
@@ -87,8 +88,7 @@ export function GameScreen({ difficulty, onHome }: Props) {
     // Counts toward the difficulty's optimal-clear tally whenever this run
     // matched the board's own optimal length — not a "best" comparison, since
     // boards of the same difficulty don't all draw the same optimal length.
-    const optimalMoves = state.hint.solutionPath.length;
-    if (state.moveCount === optimalMoves) {
+    if (isOptimalClear(state)) {
       await incrementOptimalClears(state.difficulty);
     }
 
