@@ -46,6 +46,9 @@ test('보드 밖으로 나가면 respawning 상태와 out 이벤트가 된다', 
   const grid = emptyGrid(7);
   const state = makeState({ grid, playerPos: { row: 0, col: 3 }, exitPos: { row: 6, col: 6 } });
   const next = resolveMove(state, 'up');
+  // playerPos는 보드 밖으로 리셋되지 않고 가장자리 칸에 그대로 남는다 --
+  // PlayerOrb가 날아 나가는 연출을 시작할 지점이 필요하기 때문이다.
+  assert.deepStrictEqual(next.playerPos, { row: 0, col: 3 });
   assert.strictEqual(next.status, 'respawning');
   assert.strictEqual(next.respawnDir, 'up');
   assert.strictEqual(next.lastEvent.kind, 'out');

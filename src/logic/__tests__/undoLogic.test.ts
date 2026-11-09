@@ -10,12 +10,12 @@ test('applyUndo는 undoRemaining이 0이면 스택이 남아 있어도 상태를
     playerPos: { row: 5, col: 5 },
     moveCount: 9,
   });
-  assert.deepStrictEqual(applyUndo(state), state);
+  assert.strictEqual(applyUndo(state), state);
 });
 
 test('applyUndo는 스택이 비어 있으면 상태를 바꾸지 않는다', () => {
   const state = makeState({ undoRemaining: 3, undoStack: [] });
-  assert.deepStrictEqual(applyUndo(state), state);
+  assert.strictEqual(applyUndo(state), state);
 });
 
 test('applyUndo는 마지막 스냅샷을 복원하고 남은 횟수를 하나 줄인다', () => {
