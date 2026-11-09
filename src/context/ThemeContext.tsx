@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { DARK_THEME, LIGHT_THEME, Theme } from '../constants/theme';
+import { useSettings } from './SettingsContext';
 
 type ThemeMode = 'dark' | 'light';
 
@@ -16,9 +17,12 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>('dark');
+  const { settings, updateSettings } = useSettings();
+  const mode = settings.theme;
 
-  const toggleTheme = () => setMode(m => (m === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => {
+    updateSettings({ theme: mode === 'dark' ? 'light' : 'dark' });
+  };
 
   const theme = mode === 'dark' ? DARK_THEME : LIGHT_THEME;
 

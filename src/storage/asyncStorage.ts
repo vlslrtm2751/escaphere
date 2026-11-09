@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppSettings, ClearRecord, Difficulty, StreakData } from '../types/game';
+import { mergeSettings } from '../logic/settings';
 
 const KEYS = {
   RECORDS: 'escaphere_records',
@@ -43,12 +44,12 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   } catch {}
 }
 
-export async function loadSettings(): Promise<AppSettings | null> {
+export async function loadSettings(): Promise<AppSettings> {
   try {
     const raw = await AsyncStorage.getItem(KEYS.SETTINGS);
-    return raw ? JSON.parse(raw) : null;
+    return mergeSettings(raw ? JSON.parse(raw) : null);
   } catch {
-    return null;
+    return mergeSettings(null);
   }
 }
 

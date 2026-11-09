@@ -87,12 +87,10 @@ export type ClearRecord = {
 };
 
 export type AppSettings = {
-  bgmOn: boolean;
   sfxOn: boolean;
-  theme: 'dark' | 'light';
-  animationSpeed: 'fast' | 'normal';
   hapticOn: boolean;
   colorBlindMode: boolean;
+  theme: 'dark' | 'light';
 };
 
 export type StreakData = {

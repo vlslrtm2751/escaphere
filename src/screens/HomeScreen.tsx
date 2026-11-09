@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Difficulty, ClearRecord, StreakData } from '../types/game';
 import { useTheme } from '../context/ThemeContext';
-import { BgmToggleButton } from '../components/ui/BgmToggleButton';
+import { SfxToggleButton } from '../components/ui/SfxToggleButton';
 import { ThemeToggleButton } from '../components/ui/ThemeToggleButton';
 import { Badge } from '../components/common/Badge';
 import { loadRecords, loadStreak } from '../storage/asyncStorage';
@@ -45,7 +45,7 @@ export function HomeScreen({ selectedDifficulty, onDifficultyChange, onStart }: 
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* TopBar */}
       <View style={styles.topBar}>
-        <BgmToggleButton />
+        <SfxToggleButton />
         <View style={{ flex: 1 }} />
         <Text style={[styles.version, { color: theme.subText }]}>{APP_VERSION}</Text>
         <ThemeToggleButton />
