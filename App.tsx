@@ -2,17 +2,26 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
-import { SettingsProvider } from './src/context/SettingsContext';
+import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { GameScreen } from './src/screens/GameScreen';
 import { Difficulty } from './src/types/game';
+import { DARK_THEME } from './src/constants/theme';
 
 const MAX_WIDTH = 480;
 
 function AppContent() {
+  const { hydrated } = useSettings();
   const { mode, theme } = useTheme();
   const [screen, setScreen] = useState<'home' | 'game'>('home');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
+
+  if (!hydrated) {
+    // Before hydration we don't yet know the stored theme, so there is no
+    // color to paint but the default -- this avoids a flash of the wrong
+    // theme once settings load.
+    return <View style={{ flex: 1, backgroundColor: DARK_THEME.bg }} />;
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: theme.bg }]}>
