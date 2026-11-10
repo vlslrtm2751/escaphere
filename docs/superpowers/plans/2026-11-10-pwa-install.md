@@ -341,7 +341,7 @@ console.log('inject-pwa-tags: OK (' + INDEX + ')');
 Run: `npm run build:web`
 Expected: 마지막 줄에 `inject-pwa-tags: OK (...)`. 그 다음 `cat dist/index.html`로 네 태그가 `</head>` 바로 앞에 있는지, `<script src="...">` 번들 줄이 Expo가 만든 그대로(해시가 붙은 실제 파일명)인지 눈으로 확인.
 
-- [ ] **Step 4: 자체 검증이 실제로 실패를 잡아내는지 고의로 깨뜨려서 확인**
+- [ ] **Step 4: 쓰기 이전 가드가 실제로 실패를 잡아내는지 고의로 깨뜨려서 확인**
 
 `scripts/inject-pwa-tags.js`의 `bundleMatch` 정규식을 일시적으로 존재하지 않는 패턴(예: `/<script src="[^"]+" nonexistent><\/script>/`)으로 바꾼다.
 
@@ -353,7 +353,21 @@ Expected: `inject-pwa-tags: could not find the bundle <script> tag in ...`로 �
 Run: `npm run build:web`
 Expected: 다시 `inject-pwa-tags: OK`로 성공.
 
-- [ ] **Step 5: Commit**
+**주의: 위 테스트는 "쓰기 전" 가드(`bundleMatch`가 애초에 안 잡히는 경우)만 거친다.** `bundleMatch`가 `null`이면 `fs.writeFileSync` 자체가 실행되지 않으므로, 스크립트 자신이 "Self-verify"라고 이름 붙인 쓰기 이후 재검증 블록(네 태그가 실제로 들어갔는지, 번들 줄이 그대로인지)은 이 테스트로 전혀 거치지 않는다. 이 둘은 별개의 코드 경로이고, 설계 문서가 "나중에 Expo가 템플릿을 바꿔도 CI가 조용히 깨진 산출물을 배포하지 않는다"고 보장하는 건 바로 이 쓰기 이후 블록이다. Step 5에서 그 블록도 직접 거치게 한다.
+
+- [ ] **Step 5: 쓰기 이후 자체 검증도 실제로 실패를 잡아내는지, 별도로 확인**
+
+`scripts/inject-pwa-tags.js`의 `TAGS` 배열에서 아무 항목 하나(예: `apple-touch-icon` 줄)의 따옴표나 속성 하나를 살짝 바꿔서, 그 줄이 더 이상 `expectations`의 해당 `needle` 문자열을 포함하지 않게 만든다(`bundleMatch`나 `</head>` 탐지와는 무관한 변경이어야 한다 — 그래야 쓰기 전 가드는 그대로 통과하고 실제로 파일이 써진 뒤에 재검증 블록에서만 걸린다).
+
+Run: `npm run build:web`
+Expected: `inject-pwa-tags: missing after injection: apple-touch-icon link.`(또는 바꾼 항목에 맞는 메시지)로 종료코드 비정상 반환 — **이번엔 쓰기가 실제로 일어난 뒤**에 재검증이 잡아낸 것이다.
+
+`TAGS`를 원래대로 되돌린다. `git diff -- scripts/inject-pwa-tags.js`로 되돌아간 것을 확인.
+
+Run: `npm run build:web`
+Expected: 다시 `inject-pwa-tags: OK`로 성공.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add scripts/inject-pwa-tags.js package.json
