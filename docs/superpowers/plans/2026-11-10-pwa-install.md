@@ -140,8 +140,10 @@ git commit -m "feat: generate PWA icons from the clean foreground layer"
 
 - [ ] **Step 2: 유효한 JSON인지, 아이콘 경로가 Task 1의 실제 파일과 맞는지 확인**
 
-Run: `node -e "const m = require('./public/manifest.webmanifest'); console.log(m.name, m.icons.length); m.icons.forEach(i => require('fs').accessSync('public/' + i.src))"`
-Expected: `Escaphere 3` 출력, 에러 없음(마지막 `accessSync`가 세 아이콘 파일이 실제로 존재하는지 확인한다 — 하나라도 없으면 `ENOENT`로 던진다).
+Run: `node -e "const fs = require('fs'); const m = JSON.parse(fs.readFileSync('./public/manifest.webmanifest', 'utf8')); console.log(m.name, m.icons.length); m.icons.forEach(i => fs.accessSync('public/' + i.src)); console.log('OK');"`
+Expected: `Escaphere 3`에 이어 `OK` 출력, 에러 없음(`accessSync`가 세 아이콘 파일이 실제로 존재하는지 확인한다 — 하나라도 없으면 `ENOENT`로 던진다).
+
+(주의: `require('./public/manifest.webmanifest')`는 Node가 `.webmanifest` 확장자를 모듈로 인식 못 해 JS로 잘못 해석하려다 `SyntaxError`를 던진다 — 직접 돌려서 확인한 Node 동작이다. 반드시 `JSON.parse(fs.readFileSync(...))`로 읽는다.)
 
 - [ ] **Step 3: Commit**
 
