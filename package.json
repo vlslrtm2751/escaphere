@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "check:mapgen": "tsc -p scripts/tsconfig.mapgen.json && node scripts/check-mapgen.js",
-    "build:web": "expo export --platform web --output-dir dist",
+    "build:web": "expo export --platform web --output-dir dist && node scripts/inject-pwa-tags.js",
     "check:layout": "node scripts/check-layout.js",
     "test:logic": "tsc -p scripts/tsconfig.mapgen.json && node scripts/run-logic-tests.js"
   },
