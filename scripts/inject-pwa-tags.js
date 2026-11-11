@@ -10,6 +10,7 @@ const path = require('path');
 
 const DIST = path.join(__dirname, '..', 'dist');
 const INDEX = path.join(DIST, 'index.html');
+const MANIFEST = path.join(DIST, 'manifest.webmanifest');
 
 const TAGS = [
   '<link rel="manifest" href="manifest.webmanifest" />',
@@ -55,6 +56,30 @@ if (missing.length > 0) {
 }
 if (!written.includes(bundleMatch[0])) {
   fail('the bundle <script> tag changed during injection.');
+}
+
+// Every file the tags above and the manifest point at must actually exist in
+// dist/. A rename that leaves one behind is otherwise completely silent at
+// runtime: the service worker's install handler would just skip it, and a
+// 404 manifest icon or a missing sw.js costs the install prompt with nothing
+// anywhere saying why.
+let manifest;
+try {
+  manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+} catch (e) {
+  // fail() rather than an uncaught throw, so a missing or malformed manifest
+  // reports in this script's own voice like every other check here.
+  fail('could not read ' + MANIFEST + ' -- ' + e.message);
+}
+const referenced = [
+  'sw.js',
+  'manifest.webmanifest',
+  'icons/apple-touch-icon.png',
+  ...manifest.icons.map((icon) => icon.src),
+];
+const absent = referenced.filter((p) => !fs.existsSync(path.join(DIST, p)));
+if (absent.length > 0) {
+  fail('referenced by the injected tags/manifest but missing from dist: ' + absent.join(', ') + '.');
 }
 
 console.log('inject-pwa-tags: OK (' + INDEX + ')');
