@@ -6,12 +6,15 @@
  *
  * Serves the built export (optionally under the GitHub Pages subpath, via
  * PAGES_BASE_URL -- same pattern as check-layout.js) and drives it in
- * Chromium to prove three things no static read of the code can:
+ * Chromium to prove four things no static read of the code can:
  *   1. a page that installed the service worker once still loads when it
  *      goes offline before any second online visit
  *   2. a page reloaded online after a "redeploy" gets the new content, not
  *      a cached stale one
- *   3. both of the above hold under the real GitHub Pages subpath, not just
+ *   3. that same online visit also refreshes the cached offline shell, so the
+ *      next offline launch shows the last version connected to rather than
+ *      the one the very first install happened to capture
+ *   4. all of the above hold under the real GitHub Pages subpath, not just
  *      at the server root
  *
  * Exits non-zero on any failure.
@@ -130,6 +133,19 @@ function serve() {
     if (!body.includes('deploy-marker: v2')) {
       fail('scenario 2: online reload after a redeploy served the cached index.html instead of fetching the new one');
     }
+
+    // ---- Scenario 3 (continuation): the online visit above must also have
+    // refreshed the OFFLINE shell for next time -- Scenario 2 alone only proves
+    // the live page got fresh content; it says nothing about what's now cached.
+    const cachedShell = await page.evaluate(async () => {
+      const cache = await caches.open('escaphere-shell-v1');
+      const match = await cache.match('./');
+      return match ? await match.text() : null;
+    });
+    if (!cachedShell || !cachedShell.includes('deploy-marker: v2')) {
+      fail('scenario 3: the offline shell is still the pre-redeploy copy even after an online visit to the new deploy');
+    }
+
     redeployed = false;
 
     await context.close();
