@@ -511,9 +511,16 @@ function serve() {
     await page.evaluate(() => navigator.serviceWorker.ready);
 
     redeployed = true;
-    await page.reload({ waitUntil: 'networkidle', timeout: 15000 });
-    const html = await page.content();
-    if (!html.includes('deploy-marker: v2')) {
+    const resp = await page.reload({ waitUntil: 'networkidle', timeout: 15000 });
+    // Read the navigation response's own body, not page.content() (doctype +
+    // documentElement.outerHTML). The marker is appended after </html>, which
+    // HTML parsing attaches as a Document-level sibling of <html> -- outside
+    // what documentElement.outerHTML can ever include. Confirmed directly:
+    // document.childNodes is ['html'(doctype), 'HTML', '#comment'] once parsed,
+    // so page.content() is structurally blind to it regardless of which
+    // content actually loaded. The raw response body has no such blind spot.
+    const body = resp ? await resp.text() : '';
+    if (!body.includes('deploy-marker: v2')) {
       fail('scenario 2: online reload after a redeploy served the cached index.html instead of fetching the new one');
     }
     redeployed = false;
