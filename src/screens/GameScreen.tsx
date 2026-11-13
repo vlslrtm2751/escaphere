@@ -6,6 +6,7 @@ import {
   Platform,
   LayoutChangeEvent,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Difficulty, Direction, GameEventKind } from '../types/game';
 import { useTheme } from '../context/ThemeContext';
 import { useGameState } from '../hooks/useGameState';
@@ -33,6 +34,10 @@ type Props = {
 // add a member to GameEventKind without a row here and this constant stops
 // compiling.
 type HapticKey = keyof ReturnType<typeof useHaptic>;
+
+// Below this many points of travel, a touch reads as a tap (or a miss),
+// not a swipe -- keeps an accidental brush from moving the ball.
+const SWIPE_MIN_DISTANCE = 40;
 
 const FEEDBACK: Record<GameEventKind, { sound: SfxKey | null; haptic: HapticKey | null }> = {
   none:    { sound: null,    haptic: null },
@@ -109,6 +114,25 @@ export function GameScreen({ difficulty, onHome }: Props) {
     move(direction);
   }, [state.status, move, paused, settingsOpen]);
 
+  // Swipe-to-move, for phones wide enough (a folded-open Galaxy Fold, say)
+  // that reaching the direction pad's fixed, centred position is awkward.
+  // Scoped to the board's own container below -- that area has no buttons
+  // in it, so there is nothing a swipe could steal a tap from. One swipe is
+  // one move, the same as one press of a direction button: whichever axis
+  // moved further decides the direction, and going through handleMove means
+  // the same paused/settingsOpen guard and the same sound/haptic feedback
+  // apply no matter which input produced the move.
+  const swipeGesture = Gesture.Pan()
+    .minDistance(SWIPE_MIN_DISTANCE)
+    .onEnd((e, success) => {
+      if (!success) return;
+      const direction: Direction =
+        Math.abs(e.translationX) > Math.abs(e.translationY)
+          ? e.translationX > 0 ? 'right' : 'left'
+          : e.translationY > 0 ? 'down' : 'up';
+      handleMove(direction);
+    });
+
   // PC keyboard arrow key support
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -139,15 +163,17 @@ export function GameScreen({ difficulty, onHome }: Props) {
       <View style={styles.boardContainer}>
         {/* onLayout reports the padded box, so the measured element is this
             inner one: its size is exactly the room the board may fill. */}
-        <View style={styles.boardMeasure} onLayout={measureBoardSpace}>
-          {boardSpace.width > 0 && (
-            <GameBoard
-              state={state}
-              onRespawnComplete={completeRespawn}
-              available={boardSpace}
-            />
-          )}
-        </View>
+        <GestureDetector gesture={swipeGesture}>
+          <View style={styles.boardMeasure} onLayout={measureBoardSpace}>
+            {boardSpace.width > 0 && (
+              <GameBoard
+                state={state}
+                onRespawnComplete={completeRespawn}
+                available={boardSpace}
+              />
+            )}
+          </View>
+        </GestureDetector>
       </View>
 
       <GameToolbar

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
@@ -24,7 +25,11 @@ function AppContent() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.bg }]}>
+    // The swipe-to-move gesture (GameScreen) needs a GestureHandlerRootView
+    // somewhere above it in the tree -- putting it here, at the real root,
+    // is the library's own recommendation, so any future gesture anywhere
+    // in the app is covered too, not just this one.
+    <GestureHandlerRootView style={[styles.root, { backgroundColor: theme.bg }]}>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <View style={styles.inner}>
         {screen === 'home' ? (
@@ -37,7 +42,7 @@ function AppContent() {
           <GameScreen difficulty={difficulty} onHome={() => setScreen('home')} />
         )}
       </View>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
