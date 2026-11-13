@@ -38,7 +38,19 @@ if (!html.includes('</head>')) {
   fail('no </head> found in ' + INDEX + '.');
 }
 
-fs.writeFileSync(INDEX, html.replace('</head>', TAGS + '\n</head>'));
+// An installed PWA reads as a web page, not an app, the moment a two-finger
+// pinch is allowed to zoom it -- disable zooming the same way a native app's
+// webview would. Expo's own viewport tag is replaced, not left in place
+// alongside a second one: multiple viewport metas is undefined behaviour
+// across browsers, where overwriting the one that exists is well-defined.
+const VIEWPORT_MATCH = /<meta name="viewport" content="[^"]*" \/>/;
+const VIEWPORT_TAG = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />';
+if (!VIEWPORT_MATCH.test(html)) {
+  fail('could not find the viewport <meta> tag in ' + INDEX + '.');
+}
+
+const withViewport = html.replace(VIEWPORT_MATCH, VIEWPORT_TAG);
+fs.writeFileSync(INDEX, withViewport.replace('</head>', TAGS + '\n</head>'));
 
 // Self-verify: read back what was actually written, rather than trust the
 // replace above. Catches a future Expo template change that moves or
@@ -56,6 +68,9 @@ if (missing.length > 0) {
 }
 if (!written.includes(bundleMatch[0])) {
   fail('the bundle <script> tag changed during injection.');
+}
+if (!written.includes(VIEWPORT_TAG)) {
+  fail('the viewport <meta> tag was not replaced as expected.');
 }
 
 // Every file the tags above and the manifest point at must actually exist in
