@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,6 +13,7 @@ import { useGameState } from '../hooks/useGameState';
 import { useSfx } from '../hooks/useSfx';
 import { useHaptic } from '../hooks/useHaptic';
 import { SfxKey } from '../constants/sounds';
+import { swipeDirection } from '../logic/swipeDirection';
 import { GameBoard } from '../components/game/GameBoard';
 import { GameHeader } from '../components/ui/GameHeader';
 import { GameToolbar } from '../components/ui/GameToolbar';
@@ -28,16 +29,25 @@ type Props = {
   onHome: () => void;
 };
 
+// What GameScreen exposes to an ancestor that can't reach its internal move
+// handler any other way -- specifically, App.tsx's side-margin swipe zones,
+// which sit outside this screen's own maxWidth column on a wide phone and so
+// can never be inside the same gesture-detector subtree.
+export type GameScreenHandle = {
+  swipeMove: (direction: Direction) => void;
+};
+
+// Below this many points of travel, a touch reads as a tap (or a miss), not
+// a swipe -- keeps an accidental brush from moving the ball. Shared with
+// App.tsx's margin gesture so both zones feel the same.
+export const SWIPE_MIN_DISTANCE = 40;
+
 // Haptic trigger named by key, not called directly, so this table reads as a
 // flat list of "event -> sound, haptic" rather than a pile of inline calls.
 // Record<GameEventKind, ...> makes the mapping exhaustive at the type level:
 // add a member to GameEventKind without a row here and this constant stops
 // compiling.
 type HapticKey = keyof ReturnType<typeof useHaptic>;
-
-// Below this many points of travel, a touch reads as a tap (or a miss),
-// not a swipe -- keeps an accidental brush from moving the ball.
-const SWIPE_MIN_DISTANCE = 40;
 
 const FEEDBACK: Record<GameEventKind, { sound: SfxKey | null; haptic: HapticKey | null }> = {
   none:    { sound: null,    haptic: null },
@@ -49,7 +59,7 @@ const FEEDBACK: Record<GameEventKind, { sound: SfxKey | null; haptic: HapticKey 
   hint:    { sound: 'hint',  haptic: null },
 };
 
-export function GameScreen({ difficulty, onHome }: Props) {
+export const GameScreen = forwardRef<GameScreenHandle, Props>(function GameScreen({ difficulty, onHome }, ref) {
   const { theme } = useTheme();
   const { state, move, undo, hint, refresh, nextStage, restart, completeRespawn } = useGameState(difficulty);
   const { playSfx } = useSfx();
@@ -126,12 +136,14 @@ export function GameScreen({ difficulty, onHome }: Props) {
     .minDistance(SWIPE_MIN_DISTANCE)
     .onEnd((e, success) => {
       if (!success) return;
-      const direction: Direction =
-        Math.abs(e.translationX) > Math.abs(e.translationY)
-          ? e.translationX > 0 ? 'right' : 'left'
-          : e.translationY > 0 ? 'down' : 'up';
-      handleMove(direction);
+      handleMove(swipeDirection(e.translationX, e.translationY));
     });
+
+  // Lets App.tsx's side-margin swipe zones (outside this screen's own
+  // maxWidth column on a wide phone) reach the same move handler the board's
+  // own gesture and the direction pad use -- one source of truth for what a
+  // swipe does, regardless of which zone it started in.
+  useImperativeHandle(ref, () => ({ swipeMove: handleMove }), [handleMove]);
 
   // PC keyboard arrow key support
   useEffect(() => {
@@ -146,6 +158,56 @@ export function GameScreen({ difficulty, onHome }: Props) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [handleMove]);
+
+  // Android/PWA back button: with no router in this app, there is no history
+  // entry for it to pop, so by default it closes the installed app outright
+  // -- even mid-game. Push one entry for the whole time this screen is
+  // mounted, and treat every pop of it as a toggle of the pause menu rather
+  // than a one-way "go back": pressing back while playing opens the menu
+  // (instead of exiting), and pressing it again while paused resumes
+  // (instead of exiting) -- exactly mirroring what the pause button and the
+  // resume button already do, just reached from the back button instead.
+  // Either way the entry is immediately re-pushed, so there's always exactly
+  // one left to catch the *next* back-press for as long as this screen stays
+  // mounted -- back only ever truly exits once there's nothing here left to
+  // toggle, i.e. from the home screen. (Scoped to just this toggle for now --
+  // back while the settings modal is open on top of the pause menu falls
+  // through to this same handler rather than closing settings first; a
+  // known, minor gap, not the case this was asked to fix.)
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  const suppressNextPopRef = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    window.history.pushState({ escaphereGame: true }, '');
+    const handlePopState = () => {
+      if (suppressNextPopRef.current) {
+        suppressNextPopRef.current = false;
+        return;
+      }
+      setPaused(!pausedRef.current);
+      window.history.pushState({ escaphereGame: true }, '');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Leaving this screen for home (whether from the pause menu or straight
+  // off a clear) is the one case that actually drops the entry pushed
+  // above, rather than toggling it -- without this, it would dangle and
+  // silently eat the back-press that's supposed to exit from the home
+  // screen next. Setting state directly rather than waiting on the pop's
+  // own popstate keeps it feeling instant; suppressNextPopRef stops that
+  // same pop from reopening the menu it was meant to close the screen under.
+  const leaveToHome = useCallback(() => {
+    setPaused(false);
+    if (Platform.OS === 'web') {
+      suppressNextPopRef.current = true;
+      window.history.back();
+    }
+    onHome();
+  }, [onHome]);
 
   const handleHint = useCallback(() => {
     hint();
@@ -195,10 +257,7 @@ export function GameScreen({ difficulty, onHome }: Props) {
           restart();
         }}
         onSettings={() => setSettingsOpen(true)}
-        onHome={() => {
-          setPaused(false);
-          onHome();
-        }}
+        onHome={leaveToHome}
       />
 
       <SettingsModal visible={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -207,11 +266,13 @@ export function GameScreen({ difficulty, onHome }: Props) {
         visible={state.status === 'cleared'}
         state={state}
         onNext={nextStage}
-        onHome={onHome}
+        onHome={leaveToHome}
       />
     </SafeAreaView>
   );
-}
+});
+
+GameScreen.displayName = 'GameScreen';
 
 const styles = StyleSheet.create({
   container: {
