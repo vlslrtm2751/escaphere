@@ -222,32 +222,40 @@ export const GameScreen = forwardRef<GameScreenHandle, Props>(function GameScree
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <GameHeader state={state} onPause={() => setPaused(true)} />
 
-      <View style={styles.boardContainer}>
-        {/* onLayout reports the padded box, so the measured element is this
-            inner one: its size is exactly the room the board may fill. */}
-        <GestureDetector gesture={swipeGesture}>
-          <View style={styles.boardMeasure} onLayout={measureBoardSpace}>
-            {boardSpace.width > 0 && (
-              <GameBoard
-                state={state}
-                onRespawnComplete={completeRespawn}
-                available={boardSpace}
-              />
-            )}
+      {/* Swipe anywhere below the header moves the ball, not just over the
+          board itself -- the toolbar and pad still have their own buttons
+          for taps, a pan gesture only claims the touch once it has moved
+          past minDistance, so a plain tap on either falls through to them
+          untouched (verified: see check-mobile-input.js). */}
+      <GestureDetector gesture={swipeGesture}>
+        <View style={styles.swipeArea}>
+          <View style={styles.boardContainer}>
+            {/* onLayout reports the padded box, so the measured element is
+                this inner one: its size is exactly the room the board may
+                fill. */}
+            <View style={styles.boardMeasure} onLayout={measureBoardSpace}>
+              {boardSpace.width > 0 && (
+                <GameBoard
+                  state={state}
+                  onRespawnComplete={completeRespawn}
+                  available={boardSpace}
+                />
+              )}
+            </View>
           </View>
-        </GestureDetector>
-      </View>
 
-      <GameToolbar
-        state={state}
-        onHint={handleHint}
-        onUndo={handleUndo}
-        onRefresh={() => refresh(difficulty)}
-      />
+          <GameToolbar
+            state={state}
+            onHint={handleHint}
+            onUndo={handleUndo}
+            onRefresh={() => refresh(difficulty)}
+          />
 
-      <View testID="pad-area" style={styles.padContainer}>
-        <DirectionPad onPress={handleMove} />
-      </View>
+          <View testID="pad-area" style={styles.padContainer}>
+            <DirectionPad onPress={handleMove} />
+          </View>
+        </View>
+      </GestureDetector>
 
       <PauseMenu
         visible={paused}
@@ -276,6 +284,9 @@ GameScreen.displayName = 'GameScreen';
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  swipeArea: {
     flex: 1,
   },
   boardContainer: {
