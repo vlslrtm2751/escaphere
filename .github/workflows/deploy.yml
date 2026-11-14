@@ -90,7 +90,7 @@ jobs:
           PAGES_BASE_URL: /${{ github.event.repository.name }}
         run: npm run check:pwa
 
-      - name: Verify mobile input (pinch-zoom, margin swipe, back button)
+      - name: Verify mobile input (pinch-zoom, swipe zones, back button)
         env:
           PAGES_BASE_URL: /${{ github.event.repository.name }}
         run: npm run check:mobile-input
