@@ -57,6 +57,21 @@ async function moveCount(page) {
   return match ? Number(match[1]) : null;
 }
 
+// A fixed short wait after an action, then a single read, is a flaky-test
+// classic: GitHub's shared runners are sometimes far slower than a local
+// machine, and a render that is comfortably done in 200ms locally can still
+// be mid-flight in CI. Poll instead, bounded so a genuine non-change (e.g.
+// a direction this board has blocked) still reports in well under a second.
+async function waitForChange(getter, before, timeoutMs = 3000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const now = await getter();
+    if (now !== before) return now;
+    if (Date.now() >= deadline) return before;
+    await new Promise(r => setTimeout(r, 40));
+  }
+}
+
 async function enterGame(page, url, difficulty = '쉬움') {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
   await page.getByText(difficulty, { exact: true }).first().click({ timeout: 60000 });
@@ -93,8 +108,7 @@ async function trySwipeAt(page, x, y) {
   const before = await moveCount(page);
   for (const [dx, dy] of ALL_DIRS) {
     await dragFrom(page, x, y, dx, dy);
-    await page.waitForTimeout(250);
-    if ((await moveCount(page)) !== before) return true;
+    if ((await waitForChange(() => moveCount(page), before)) !== before) return true;
   }
   return false;
 }
@@ -167,8 +181,7 @@ async function checkToolbarAndPadStillTappable(browser, url) {
   let padTapMoved = false;
   for (const glyph of ['▲', '▼', '◀', '▶']) {
     await page.getByText(glyph, { exact: true }).click({ timeout: 10000 });
-    await page.waitForTimeout(200);
-    if ((await moveCount(page)) !== before) { padTapMoved = true; break; }
+    if ((await waitForChange(() => moveCount(page), before)) !== before) { padTapMoved = true; break; }
   }
   console.log('  방향키 탭: ' + (padTapMoved ? 'OK (이동수 변화 확인)' : 'FAIL (이동수 변화 없음)'));
   if (!padTapMoved) fail('toolbar/pad tappable: tapping all 4 direction-pad buttons never changed the move count');
@@ -176,17 +189,22 @@ async function checkToolbarAndPadStillTappable(browser, url) {
   const hintBtn = page.getByText(/^힌트/, { exact: false }).first();
   const hintBefore = await hintBtn.innerText();
   await hintBtn.click({ timeout: 10000 });
-  await page.waitForTimeout(200);
-  const hintAfter = await hintBtn.innerText();
+  const hintAfter = await waitForChange(() => hintBtn.innerText(), hintBefore);
   console.log('  힌트 버튼: ' + hintBefore + ' -> ' + hintAfter + (hintAfter !== hintBefore ? ' (OK)' : ' (FAIL)'));
   if (hintAfter === hintBefore) fail('toolbar/pad tappable: hint button tap did not register once wrapped in the swipe gesture');
 
+  // Move at least once first (through the board's own, already-proven
+  // gesture) so refresh resetting to 0 actually proves something -- "stays
+  // at 0" would otherwise be trivially true if the pad tap above never
+  // landed either.
+  const boardBox = await page.locator('[data-testid="game-board"]').boundingBox();
+  await trySwipeAt(page, boardBox.x + boardBox.width / 2, boardBox.y + boardBox.height / 2);
   const movesBeforeRefresh = await moveCount(page);
   await page.getByText('재생성', { exact: true }).click({ timeout: 10000 });
-  await page.waitForTimeout(200);
-  const movesAfterRefresh = await moveCount(page);
-  console.log('  재생성 버튼: 이동수 ' + movesBeforeRefresh + ' -> ' + movesAfterRefresh + (movesAfterRefresh === 0 ? ' (OK, 새 보드)' : ' (FAIL)'));
-  if (movesAfterRefresh !== 0) fail('toolbar/pad tappable: refresh button tap did not register once wrapped in the swipe gesture');
+  const movesAfterRefresh = await waitForChange(() => moveCount(page), movesBeforeRefresh);
+  const refreshOk = movesBeforeRefresh !== 0 && movesAfterRefresh === 0;
+  console.log('  재생성 버튼: 이동수 ' + movesBeforeRefresh + ' -> ' + movesAfterRefresh + (refreshOk ? ' (OK, 새 보드)' : ' (FAIL)'));
+  if (!refreshOk) fail('toolbar/pad tappable: refresh button tap did not register once wrapped in the swipe gesture');
 
   if (pageErrors.length) fail('toolbar/pad tappable: page errors — ' + pageErrors.slice(0, 3).join(' | '));
   await page.close();
@@ -246,14 +264,12 @@ async function checkBackButtonPauseToggle(browser, url) {
   if (await pauseVisible()) fail('back button: pause menu already showing right after entering the game');
 
   await page.goBack();
-  await page.waitForTimeout(300);
-  const openedOnFirstBack = await pauseVisible();
+  const openedOnFirstBack = await waitForChange(pauseVisible, false);
   console.log('  첫 뒤로가기(플레이 중): 일시정지 메뉴 ' + (openedOnFirstBack ? '열림 (기대값)' : '안 열림 (FAIL)'));
   if (!openedOnFirstBack) fail('back button: first back-press during gameplay did not open the pause menu');
 
   await page.goBack();
-  await page.waitForTimeout(300);
-  const closedOnSecondBack = !(await pauseVisible());
+  const closedOnSecondBack = !(await waitForChange(pauseVisible, true));
   console.log('  두번째 뒤로가기(일시정지 중): 일시정지 메뉴 ' + (closedOnSecondBack ? '닫힘 (기대값)' : '안 닫힘 (FAIL)'));
   if (!closedOnSecondBack) fail('back button: second back-press while paused did not resume (close the menu)');
 
@@ -261,11 +277,10 @@ async function checkBackButtonPauseToggle(browser, url) {
   // then leave via the button -- not back -- to check that leaving drops the
   // entry rather than leaving it dangling for the next check below.
   await page.goBack();
-  await page.waitForTimeout(300);
-  if (!(await pauseVisible())) fail('back button: third back-press did not reopen the pause menu (toggle should keep alternating)');
+  const reopenedOnThirdBack = await waitForChange(pauseVisible, false);
+  if (!reopenedOnThirdBack) fail('back button: third back-press did not reopen the pause menu (toggle should keep alternating)');
   await page.getByText('홈으로', { exact: true }).first().click({ timeout: 10000 });
-  await page.waitForTimeout(300);
-  const homeAfterButton = await homeVisible();
+  const homeAfterButton = await waitForChange(homeVisible, false);
   console.log('  "홈으로" 버튼: 홈 화면 ' + (homeAfterButton ? '표시됨 (기대값)' : '표시 안 됨 (FAIL)'));
   if (!homeAfterButton) fail('back button: tapping "홈으로" from the pause menu did not return to the home screen');
 
@@ -278,7 +293,7 @@ async function checkBackButtonPauseToggle(browser, url) {
   // nothing app-level was left to intercept it. A dangling entry would
   // instead have kept the pause menu (or the game screen) showing.
   await page.goBack();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(500);
   const notShowingGameOrPause = !(await pauseVisible()) && !(await page.locator('[data-testid="game-board"]').isVisible().catch(() => false));
   console.log('  홈 화면에서 뒤로가기: ' + (notShowingGameOrPause ? '게임/일시정지 재등장 없음 (기대값)' : 'FAIL'));
   if (!notShowingGameOrPause) fail('back button: a dangling game-screen history entry resurfaced after returning home');
